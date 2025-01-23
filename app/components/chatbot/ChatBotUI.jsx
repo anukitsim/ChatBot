@@ -9,8 +9,7 @@ import ChatBubbleContent from "./ChatBubbleContent";
 import { v4 as uuidv4 } from "uuid";
 import knowledgeBase from "../../data/knowledgeBase";
 import { WindupChildren } from "windups"; // Ensure windups is imported
-import ScrollToBottom from 'react-scroll-to-bottom';
-
+import ScrollToBottom from "react-scroll-to-bottom";
 
 /* ---------------------------
    Styled Components
@@ -69,14 +68,26 @@ const ChatHeader = styled.div`
   align-items: center;
 `;
 
+const StyledScrollContainer = styled(ScrollToBottom)`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px; /* Maintain padding */
+  gap: 10px; /* Preserve spacing between messages */
+  overflow-y: auto; /* Enable smooth scrolling */
+  scrollbar-width: none; -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none; 
+  }
+`;
+
 const ChatContent = styled.div`
   flex: 1;
-  padding: 12px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
 `;
+
 const ChatFooter = styled.div`
   border-top: 1px solid #eee;
   padding: 10px 14px;
@@ -220,11 +231,10 @@ const chatBoxVariants = {
   exit: { opacity: 0, y: 0 },
 };
 
-
 const NAV_TYPES = {
-  SUBTOPICS: 'subtopics',
-  FOLLOW_UPS: 'followUps',
-  FOLLOW_UP_RESPONSE: 'followUpResponse',
+  SUBTOPICS: "subtopics",
+  FOLLOW_UPS: "followUps",
+  FOLLOW_UP_RESPONSE: "followUpResponse",
 };
 
 /* ---------------------------
@@ -239,11 +249,6 @@ export default function ChatBotUI() {
   const [navigationStack, setNavigationStack] = useState([]); // Navigation history stack
   const [input, setInput] = useState("");
   const [isBotTyping, setIsBotTyping] = useState(false);
-  const chatEndRef = useRef(null);
-  const chatContentRef = useRef(null); // Reference to ChatContent
-  // Attach a custom property to manage debounced scrolling
-chatContentRef.current = chatContentRef.current || {};
-chatContentRef.current.scrollTimeout = null;
 
   const [scrollPosition, setScrollPosition] = useState(0); // Scroll position state
 
@@ -282,28 +287,28 @@ chatContentRef.current.scrollTimeout = null;
 
   const handleMainTopicClick = (mainTopic) => {
     console.log("Selected Main Topic:", mainTopic);
-  
+
     setSelectedMainTopic(mainTopic);
     setSelectedSubtopic(null);
-  
+
     // Reset the stack with a single subtopics entry
     setNavigationStack([{ type: NAV_TYPES.SUBTOPICS, data: mainTopic }]);
-  
+
     console.log("Navigation Stack after Main Topic:", navigationStack);
-  
+
     // Add user message
     setMessages((prev) => [
       ...prev,
       { id: uuidv4(), type: "user", content: mainTopic },
     ]);
-  
+
     setIsBotTyping(true);
-  
+
     setTimeout(() => {
       const mainTopicObj = knowledgeBase.find(
         (topic) => topic.mainTopic === mainTopic
       );
-  
+
       if (mainTopicObj) {
         setMessages((prev) => [
           ...prev,
@@ -320,12 +325,11 @@ chatContentRef.current.scrollTimeout = null;
     }, 1500);
   };
 
-  
   const handleSubtopicClick = (subtopic) => {
     console.log("Selected Subtopic:", subtopic);
-  
+
     setSelectedSubtopic(subtopic);
-  
+
     // Add 'followUps' entry to the stack while avoiding duplicates
     setNavigationStack((prev) => {
       const updatedStack = [
@@ -335,15 +339,15 @@ chatContentRef.current.scrollTimeout = null;
       console.log("Navigation Stack after Subtopic:", updatedStack);
       return updatedStack;
     });
-  
+
     // Add user message
     setMessages((prev) => [
       ...prev,
       { id: uuidv4(), type: "user", content: subtopic },
     ]);
-  
+
     setIsBotTyping(true);
-  
+
     setTimeout(() => {
       const mainTopicObj = knowledgeBase.find(
         (topic) => topic.mainTopic === selectedMainTopic
@@ -351,7 +355,7 @@ chatContentRef.current.scrollTimeout = null;
       const subtopicObj = mainTopicObj
         ? mainTopicObj.subtopics.find((sub) => sub.subtopic === subtopic)
         : null;
-  
+
       if (subtopicObj) {
         // Add the subtopic response to the chat
         setMessages((prev) => [
@@ -364,20 +368,19 @@ chatContentRef.current.scrollTimeout = null;
             typed: false,
           },
         ]);
-  
+
         // Do not add follow-up options here. It will be handled in `handleTypewriterDone`.
       }
-  
+
       setIsBotTyping(false);
     }, 1500); // Adjust this delay if needed
   };
-  
 
   const handleFollowUpClick = (target) => {
     console.log("Selected Follow-Up:", target);
-  
+
     setIsBotTyping(true);
-  
+
     // Add 'followUpResponse' entry to the stack
     setNavigationStack((prev) => {
       const updatedStack = [
@@ -387,19 +390,19 @@ chatContentRef.current.scrollTimeout = null;
       console.log("Navigation Stack after Follow-Up:", updatedStack);
       return updatedStack;
     });
-  
+
     // Add user selection to chat history
     setMessages((prev) => [
       ...prev,
       { id: uuidv4(), type: "user", content: target },
     ]);
-  
+
     setTimeout(() => {
       // Locate the selected main topic
       const mainTopicObj = knowledgeBase.find(
         (topic) => topic.mainTopic === selectedMainTopic
       );
-  
+
       if (!mainTopicObj) {
         console.error("Main topic not found:", selectedMainTopic);
         setMessages((prev) => [
@@ -415,12 +418,12 @@ chatContentRef.current.scrollTimeout = null;
         setIsBotTyping(false);
         return;
       }
-  
+
       // Locate the selected subtopic
       const subtopicObj = mainTopicObj.subtopics.find(
         (sub) => sub.subtopic === selectedSubtopic
       );
-  
+
       if (!subtopicObj) {
         console.error("Subtopic not found:", selectedSubtopic);
         setMessages((prev) => [
@@ -436,12 +439,12 @@ chatContentRef.current.scrollTimeout = null;
         setIsBotTyping(false);
         return;
       }
-  
+
       // Locate the follow-up response
       const followUpObj = subtopicObj.followUpOptions.find(
         (opt) => opt.target === target
       );
-  
+
       if (!followUpObj) {
         console.error("Follow-up target not found:", target);
         setMessages((prev) => [
@@ -457,12 +460,12 @@ chatContentRef.current.scrollTimeout = null;
         setIsBotTyping(false);
         return;
       }
-  
+
       // Generate the follow-up response
       const followUpSubtopic = mainTopicObj.subtopics.find(
         (sub) => sub.subtopic === followUpObj.target
       );
-  
+
       if (followUpSubtopic && followUpSubtopic.response) {
         setMessages((prev) => [
           ...prev,
@@ -487,12 +490,11 @@ chatContentRef.current.scrollTimeout = null;
           },
         ]);
       }
-  
+
       setIsBotTyping(false);
     }, 1500);
   };
-  
-  
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
@@ -552,51 +554,18 @@ chatContentRef.current.scrollTimeout = null;
 
   // Toggle chat open/close and store scroll position when closing
   const toggleChat = () => {
-    if (isOpen && chatContentRef.current) {
-      setScrollPosition(chatContentRef.current.scrollTop); // Store scroll position
-    }
+   
     setIsOpen((prev) => !prev);
   };
 
-  // Restore scroll position when opening the chat
-  useEffect(() => {
-    if (isOpen && chatContentRef.current) {
-      chatContentRef.current.scrollTop = scrollPosition; // Restore scroll position
-    }
-  }, [isOpen, scrollPosition]);
 
-  // Smoothly scroll to the latest message when messages or typing status change
-  useEffect(() => {
-    const scrollToBottom = () => {
-      if (chatEndRef.current) {
-        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-      }
-    };
   
-    scrollToBottom();
-  }, [messages]);
   
-  useEffect(() => {
-    if (isBotTyping) {
-      const interval = setInterval(() => {
-        if (chatEndRef.current) {
-          chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-        }
-      }, 50); // Smooth scroll during typing
-  
-      return () => clearInterval(interval);
-    }
-  }, [isBotTyping]);
 
   const scrollToBottomDuringTyping = () => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-    }
+    // No manual scrolling is needed; ScrollToBottom handles it automatically.
   };
   
-  
-  
-
 
   const handleTypewriterDone = (message) => {
     if (message.hasCallback) {
@@ -607,7 +576,7 @@ chatContentRef.current.scrollTimeout = null;
             : msg
         )
       );
-  
+
       // If the greeting is done, display the main topics
       if (
         message.type === "bot" &&
@@ -617,22 +586,24 @@ chatContentRef.current.scrollTimeout = null;
       ) {
         addMainTopics();
       }
-  
+
       // Render follow-up options only after the subtopic response finishes typing
       if (message.type === "bot") {
         const lastEntry = navigationStack[navigationStack.length - 1];
-  
+
         if (lastEntry && lastEntry.type === NAV_TYPES.FOLLOW_UPS) {
           const currentSubtopic = lastEntry.data;
-  
+
           // Find the subtopic object
           const mainTopicObj = knowledgeBase.find(
             (topic) => topic.mainTopic === selectedMainTopic
           );
           const subtopicObj = mainTopicObj
-            ? mainTopicObj.subtopics.find((sub) => sub.subtopic === currentSubtopic)
+            ? mainTopicObj.subtopics.find(
+                (sub) => sub.subtopic === currentSubtopic
+              )
             : null;
-  
+
           if (subtopicObj && subtopicObj.followUpOptions.length > 0) {
             setMessages((prev) => [
               ...prev,
@@ -648,31 +619,32 @@ chatContentRef.current.scrollTimeout = null;
       }
     }
   };
-  
 
   const handleBackClick = () => {
     if (navigationStack.length === 0) {
       console.log("Navigation Stack is empty. No action taken.");
       return;
     }
-  
+
     const newStack = [...navigationStack];
     const lastStep = newStack.pop(); // Remove the last navigation state
     setNavigationStack(newStack);
-  
+
     console.log("Navigation Stack after Back:", newStack);
-  
+
     if (lastStep.type === NAV_TYPES.FOLLOW_UP_RESPONSE) {
       // Go back to follow-ups
       setSelectedSubtopic(lastStep.data);
-  
+
       const mainTopicObj = knowledgeBase.find(
         (topic) => topic.mainTopic === selectedMainTopic
       );
       const subtopicObj = mainTopicObj
-        ? mainTopicObj.subtopics.find((sub) => sub.subtopic === selectedSubtopic)
+        ? mainTopicObj.subtopics.find(
+            (sub) => sub.subtopic === selectedSubtopic
+          )
         : null;
-  
+
       if (subtopicObj && subtopicObj.followUpOptions.length > 0) {
         setMessages((prev) => [
           ...prev,
@@ -687,11 +659,11 @@ chatContentRef.current.scrollTimeout = null;
     } else if (lastStep.type === NAV_TYPES.FOLLOW_UPS) {
       // Go back to subtopics
       setSelectedSubtopic(null);
-  
+
       const mainTopicObj = knowledgeBase.find(
         (topic) => topic.mainTopic === selectedMainTopic
       );
-  
+
       if (mainTopicObj) {
         setMessages((prev) => [
           ...prev,
@@ -711,9 +683,6 @@ chatContentRef.current.scrollTimeout = null;
       addMainTopics();
     }
   };
-  
-  
-  
 
   return (
     <ChatContainer>
@@ -731,7 +700,8 @@ chatContentRef.current.scrollTimeout = null;
             transition={{ duration: 0.3 }}
           >
             <ChatHeader>Chat With Us</ChatHeader>
-            <ChatContent ref={chatContentRef}>
+            <StyledScrollContainer>
+            <ChatContent>
               {messages
                 .filter((msg) => !msg.hidden)
                 .map((msg) => {
@@ -849,8 +819,8 @@ chatContentRef.current.scrollTimeout = null;
                   <FiArrowLeft size={18} /> Back
                 </BackButton>
               )}
-              <div ref={chatEndRef} />
             </ChatContent>
+            </StyledScrollContainer>
             <ChatFooter>
               <ChatInputContainer>
                 <ChatInput

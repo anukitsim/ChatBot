@@ -9,9 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "dompurify": "^3.2.3",
+    "framer-motion": "^12.0.1",
+    "next": "15.1.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.1.5"
+    "react-icons": "^5.4.0",
+    "react-scroll-to-bottom": "^4.2.0",
+    "styled-components": "^6.1.14",
+    "uuid": "^11.0.5",
+    "windups": "^1.2.2"
   },
   "devDependencies": {
     "postcss": "^8",
