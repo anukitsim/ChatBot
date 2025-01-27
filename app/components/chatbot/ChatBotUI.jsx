@@ -1,20 +1,18 @@
-// components/ChatBot/ChatBotUI.jsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { FiSend, FiMessageSquare, FiX, FiArrowLeft } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import styled from "styled-components";
 import ChatBubbleContent from "./ChatBubbleContent";
 import { v4 as uuidv4 } from "uuid";
-import knowledgeBase from "../../data/knowledgeBase";
-import { WindupChildren } from "windups"; // Ensure windups is imported
+import { WindupChildren } from "windups";
 import ScrollToBottom from "react-scroll-to-bottom";
+import parseHtmlToJSXArray from "@/utils/parseHtmlToJSXArray";
 
-/* ---------------------------
-   Styled Components
-   --------------------------- */
-
+// ---------------------------
+// Styled Components
+// ---------------------------
 const ChatContainer = styled.div`
   position: fixed;
   bottom: 20px;
@@ -22,6 +20,7 @@ const ChatContainer = styled.div`
   z-index: 1000;
   font-family: "Poppins", sans-serif;
 `;
+
 const ChatBubbleIcon = styled(motion.button)`
   width: 60px;
   height: 60px;
@@ -68,16 +67,20 @@ const ChatHeader = styled.div`
   align-items: center;
 `;
 
-const StyledScrollContainer = styled(ScrollToBottom)`
+const StyledScrollContainer = styled(ScrollToBottom).attrs({
+  // This helps smooth out scroll jumps
+  scrollBehavior: "smooth",
+})`
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 12px; /* Maintain padding */
-  gap: 10px; /* Preserve spacing between messages */
-  overflow-y: auto; /* Enable smooth scrolling */
-  scrollbar-width: none; -ms-overflow-style: none;
+  padding: 12px;
+  gap: 10px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   &::-webkit-scrollbar {
-    display: none; 
+    display: none;
   }
 `;
 
@@ -95,11 +98,13 @@ const ChatFooter = styled.div`
   flex-direction: column;
   gap: 8px;
 `;
+
 const ChatInputContainer = styled.div`
   display: flex;
   gap: 8px;
   align-items: center;
 `;
+
 const ChatInput = styled.input`
   flex: 1;
   padding: 8px;
@@ -112,6 +117,7 @@ const ChatInput = styled.input`
     color: #aaa;
   }
 `;
+
 const SendButton = styled.button`
   background-color: #e5703a;
   color: #fff;
@@ -125,10 +131,10 @@ const SendButton = styled.button`
     transform: scale(1.05);
   }
 `;
+
 const ChatMessage = styled.div`
   align-self: ${({ type }) => (type === "bot" ? "flex-start" : "flex-end")};
-  background-color: ${({ type }) =>
-    type === "bot" ? "transparent" : "#e5703a"};
+  background-color: ${({ type }) => (type === "bot" ? "transparent" : "#e5703a")};
   color: ${({ type }) => (type === "bot" ? "#333" : "#fff")};
   padding: 10px 12px;
   border-radius: 16px;
@@ -140,9 +146,10 @@ const ChatMessage = styled.div`
     type === "bot" ? "1px solid rgba(0, 0, 0, 0.1)" : "none"};
   box-shadow: ${({ type }) =>
     type === "bot" ? "0 2px 4px rgba(0, 0, 0, 0.1)" : "none"};
-  backdrop-filter: blur(10px); /* Optional for a blurred effect */
-  background-clip: padding-box; /* Ensures transparency looks smooth */
+  backdrop-filter: blur(10px);
+  background-clip: padding-box;
 `;
+
 const CardContainer = styled.div`
   background-color: #fefefe;
   border-radius: 10px;
@@ -151,17 +158,20 @@ const CardContainer = styled.div`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   border-left: 4px solid #e5703a;
 `;
+
 const CardDescription = styled.div`
   font-size: 14px;
   color: #e5703a;
   margin-bottom: 12px;
 `;
+
 const CardButtonsWrapper = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 8px; /* Add spacing between buttons */
-  padding-top: 10px; /* Add spacing from the description */
+  gap: 8px;
+  padding-top: 10px;
 `;
+
 const CardButton = styled.button`
   background-color: #fff;
   color: #333;
@@ -179,35 +189,38 @@ const CardButton = styled.button`
     border-color: #e5703a;
   }
 `;
-// BackButton Styled Component
+
 const BackButton = styled.button`
   display: flex;
   align-items: center;
-  justify-content: flex-start; /* Align items to the start (left) */
+  justify-content: flex-start;
   background-color: #e5703a;
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 10px 12px; /* Added horizontal padding */
+  padding: 10px 12px;
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s, transform 0.15s;
-  width: 100%; /* Full width */
-  text-align: left; /* Ensure text is left-aligned */
+  width: 100%;
+  text-align: left;
+  margin-top: 10px;
 
   &:hover {
     background-color: #d55d2f;
     transform: scale(1.02);
   }
   svg {
-    margin-right: 8px; /* Space between icon and text */
+    margin-right: 8px;
   }
 `;
+
 const LoaderWrapper = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
 `;
+
 const Spinner = styled.div`
   border: 4px solid rgba(0, 0, 0, 0.1);
   border-top: 4px solid #e5703a;
@@ -222,10 +235,6 @@ const Spinner = styled.div`
   }
 `;
 
-/* ---------------------------
-   Animation Variants
-   --------------------------- */
-
 const chatBoxVariants = {
   visible: { opacity: 1, y: 0 },
   exit: { opacity: 0, y: 0 },
@@ -237,29 +246,55 @@ const NAV_TYPES = {
   FOLLOW_UP_RESPONSE: "followUpResponse",
 };
 
-/* ---------------------------
-    MAIN CHAT COMPONENT
-    --------------------------- */
-
 export default function ChatBotUI() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
+  const [knowledgeBase, setKnowledgeBase] = useState([]);
   const [selectedMainTopic, setSelectedMainTopic] = useState(null);
-  const [selectedSubtopic, setSelectedSubtopic] = useState(null); // Track selected subtopic
-  const [navigationStack, setNavigationStack] = useState([]); // Navigation history stack
+  const [selectedSubtopic, setSelectedSubtopic] = useState(null);
+  const [navigationStack, setNavigationStack] = useState([]);
   const [input, setInput] = useState("");
   const [isBotTyping, setIsBotTyping] = useState(false);
 
-  const [scrollPosition, setScrollPosition] = useState(0); // Scroll position state
+  // 1. Fetch WP data on mount
+  useEffect(() => {
+    async function loadKB() {
+      try {
+        const res = await fetch("https://179a-178-134-255-183.ngrok-free.app/wp-json/kb/v1/topics");
+        if (!res.ok) {
+          throw new Error("Failed to fetch from WP");
+        }
+        const data = await res.json();
+        // Transform WP data → old shape
+        const newKB = data.map((topic) => {
+          return {
+            mainTopic: topic.mainTopic,
+            description: topic.description,
+            subtopics: topic.subtopics.map((sub) => ({
+              subtopic: sub.subtopic,
+              // Convert raw HTML to an array of strings/JSX
+              response: parseHtmlToJSXArray(sub.response),
+              followUpOptions: sub.followUpOptions || [],
+            })),
+          };
+        });
+        setKnowledgeBase(newKB);
+      } catch (err) {
+        console.error("Error fetching knowledge base:", err);
+      }
+    }
 
-  // Initial greeting message when chat opens
+    loadKB();
+  }, []);
+
+  // 2. Open chat => show greeting if no messages
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       addGreeting();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
+  // Greeting
   const addGreeting = () => {
     setMessages((prev) => [
       ...prev,
@@ -267,282 +302,244 @@ export default function ChatBotUI() {
         id: uuidv4(),
         type: "bot",
         content: ["Hello! How can we assist you today? Choose a topic below:"],
-        hasCallback: true, // Indicates callback after typing
-        typed: false, // Initialize as not typed
+        hasCallback: true,
+        typed: false,
       },
     ]);
   };
 
+  // Show main topics
   const addMainTopics = () => {
+    if (!knowledgeBase || knowledgeBase.length === 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          type: "bot",
+          content: ["Loading topics, please wait..."],
+        },
+      ]);
+      return;
+    }
     setMessages((prev) => [
       ...prev,
       {
         id: uuidv4(),
         type: "topicList",
         topics: knowledgeBase.map((topic) => topic.mainTopic),
-        typed: true, // Topics are static, no typewriter effect
+        typed: true,
       },
     ]);
   };
 
+  // Handle main topic
   const handleMainTopicClick = (mainTopic) => {
-    console.log("Selected Main Topic:", mainTopic);
-
     setSelectedMainTopic(mainTopic);
     setSelectedSubtopic(null);
 
-    // Reset the stack with a single subtopics entry
     setNavigationStack([{ type: NAV_TYPES.SUBTOPICS, data: mainTopic }]);
+    // user message
+    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: mainTopic }]);
 
-    console.log("Navigation Stack after Main Topic:", navigationStack);
-
-    // Add user message
-    setMessages((prev) => [
-      ...prev,
-      { id: uuidv4(), type: "user", content: mainTopic },
-    ]);
-
+    // Simulate bot typing
     setIsBotTyping(true);
-
     setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find(
-        (topic) => topic.mainTopic === mainTopic
-      );
-
+      const mainTopicObj = knowledgeBase.find((topic) => topic.mainTopic === mainTopic);
       if (mainTopicObj) {
+        const subNames = mainTopicObj.subtopics.map((s) => s.subtopic);
         setMessages((prev) => [
           ...prev,
           {
             id: uuidv4(),
             type: "subtopicCard",
-            description: mainTopicObj.description,
-            subtopics: mainTopicObj.subtopics.map((sub) => sub.subtopic),
+            description: mainTopicObj.description || "",
+            subtopics: subNames,
             typed: true,
           },
         ]);
       }
       setIsBotTyping(false);
-    }, 1500);
+    }, 1200);
   };
 
+  // Handle subtopic
   const handleSubtopicClick = (subtopic) => {
-    console.log("Selected Subtopic:", subtopic);
-
     setSelectedSubtopic(subtopic);
 
-    // Add 'followUps' entry to the stack while avoiding duplicates
     setNavigationStack((prev) => {
-      const updatedStack = [
+      const updated = [
         ...prev.filter((entry) => entry.type !== NAV_TYPES.FOLLOW_UPS),
         { type: NAV_TYPES.FOLLOW_UPS, data: subtopic },
       ];
-      console.log("Navigation Stack after Subtopic:", updatedStack);
-      return updatedStack;
+      return updated;
     });
 
-    // Add user message
-    setMessages((prev) => [
-      ...prev,
-      { id: uuidv4(), type: "user", content: subtopic },
-    ]);
+    // user message
+    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: subtopic }]);
 
     setIsBotTyping(true);
-
     setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find(
-        (topic) => topic.mainTopic === selectedMainTopic
-      );
-      const subtopicObj = mainTopicObj
-        ? mainTopicObj.subtopics.find((sub) => sub.subtopic === subtopic)
-        : null;
-
-      if (subtopicObj) {
-        // Add the subtopic response to the chat
+      const mainTopicObj = knowledgeBase.find((t) => t.mainTopic === selectedMainTopic);
+      if (!mainTopicObj) {
         setMessages((prev) => [
           ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: subtopicObj.response,
-            hasCallback: true, // Ensure typing animation callback is triggered
-            typed: false,
-          },
+          { id: uuidv4(), type: "bot", content: ["No main topic found."] },
         ]);
-
-        // Do not add follow-up options here. It will be handled in `handleTypewriterDone`.
+        setIsBotTyping(false);
+        return;
       }
 
+      const subObj = mainTopicObj.subtopics.find((s) => s.subtopic === subtopic);
+      if (!subObj) {
+        setMessages((prev) => [
+          ...prev,
+          { id: uuidv4(), type: "bot", content: ["Subtopic not found."] },
+        ]);
+        setIsBotTyping(false);
+        return;
+      }
+
+      // Add the subtopic's content & store subtopicName
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          type: "bot",
+          content: subObj.response,
+          subtopicName: subObj.subtopic, // keep track
+          hasCallback: true,
+          typed: false,
+        },
+      ]);
       setIsBotTyping(false);
-    }, 1500); // Adjust this delay if needed
+    }, 1200);
   };
 
+  // Handle follow-up click
   const handleFollowUpClick = (target) => {
-    console.log("Selected Follow-Up:", target);
-
     setIsBotTyping(true);
 
-    // Add 'followUpResponse' entry to the stack
-    setNavigationStack((prev) => {
-      const updatedStack = [
-        ...prev.filter((entry) => entry.type !== NAV_TYPES.FOLLOW_UP_RESPONSE),
-        { type: NAV_TYPES.FOLLOW_UP_RESPONSE, data: target },
-      ];
-      console.log("Navigation Stack after Follow-Up:", updatedStack);
-      return updatedStack;
-    });
+    // user message
+    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: target }]);
 
-    // Add user selection to chat history
-    setMessages((prev) => [
-      ...prev,
-      { id: uuidv4(), type: "user", content: target },
+    setNavigationStack((prev) => [
+      ...prev.filter((e) => e.type !== NAV_TYPES.FOLLOW_UP_RESPONSE),
+      { type: NAV_TYPES.FOLLOW_UP_RESPONSE, data: target },
     ]);
 
     setTimeout(() => {
-      // Locate the selected main topic
-      const mainTopicObj = knowledgeBase.find(
-        (topic) => topic.mainTopic === selectedMainTopic
-      );
-
+      const mainTopicObj = knowledgeBase.find((topic) => topic.mainTopic === selectedMainTopic);
       if (!mainTopicObj) {
-        console.error("Main topic not found:", selectedMainTopic);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: ["Sorry, no response found."],
-            hasCallback: true,
-            typed: false,
-          },
-        ]);
-        setIsBotTyping(false);
+        botReply("Sorry, no main topic found.");
         return;
       }
 
-      // Locate the selected subtopic
-      const subtopicObj = mainTopicObj.subtopics.find(
-        (sub) => sub.subtopic === selectedSubtopic
-      );
-
-      if (!subtopicObj) {
-        console.error("Subtopic not found:", selectedSubtopic);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: ["Sorry, no response found."],
-            hasCallback: true,
-            typed: false,
-          },
-        ]);
-        setIsBotTyping(false);
+      // Current subtopic
+      const currentSub = mainTopicObj.subtopics.find((s) => s.subtopic === selectedSubtopic);
+      if (!currentSub) {
+        botReply("No subtopic found.");
         return;
       }
 
-      // Locate the follow-up response
-      const followUpObj = subtopicObj.followUpOptions.find(
-        (opt) => opt.target === target
-      );
-
-      if (!followUpObj) {
-        console.error("Follow-up target not found:", target);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: ["Sorry, no response found."],
-            hasCallback: true,
-            typed: false,
-          },
-        ]);
-        setIsBotTyping(false);
-        return;
+      // Check if followUp is in the current subtopic
+      const followUp = currentSub.followUpOptions.find((f) => f.target === target);
+      if (!followUp) {
+        // Maybe the target is a subtopic in same main topic
+        const fallbackSub = mainTopicObj.subtopics.find((s) => s.subtopic === target);
+        if (!fallbackSub) {
+          botReply("No follow-up found.");
+          return;
+        } else {
+          // We found a subtopic in the same topic matching "target"
+          setSelectedSubtopic(target);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              type: "bot",
+              content: fallbackSub.response,
+              subtopicName: fallbackSub.subtopic,
+              hasCallback: true,
+              typed: false,
+            },
+          ]);
+          setIsBotTyping(false);
+          return;
+        }
       }
 
-      // Generate the follow-up response
-      const followUpSubtopic = mainTopicObj.subtopics.find(
-        (sub) => sub.subtopic === followUpObj.target
-      );
-
-      if (followUpSubtopic && followUpSubtopic.response) {
+      // We found a matching followUp inside current subtopic
+      // Usually the .target is also a subtopic. Let's see:
+      const followUpSubtopic = mainTopicObj.subtopics.find((s) => s.subtopic === followUp.target);
+      if (followUpSubtopic) {
+        setSelectedSubtopic(followUpSubtopic.subtopic);
         setMessages((prev) => [
           ...prev,
           {
             id: uuidv4(),
             type: "bot",
             content: followUpSubtopic.response,
+            subtopicName: followUpSubtopic.subtopic,
             hasCallback: true,
             typed: false,
           },
         ]);
       } else {
-        console.error("Response for follow-up not found:", followUpObj.target);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: ["Sorry, no response found."],
-            hasCallback: true,
-            typed: false,
-          },
-        ]);
+        botReply("Sorry, no response found for that follow-up.");
       }
 
       setIsBotTyping(false);
-    }, 1500);
+    }, 1200);
   };
 
+  // Simple helper to send a quick bot reply
+  function botReply(text) {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: uuidv4(),
+        type: "bot",
+        content: [text],
+        hasCallback: true,
+        typed: false,
+      },
+    ]);
+    setIsBotTyping(false);
+  }
+
+  // Send user typed text
   const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
     setInput("");
 
-    // Add user message to chat history
-    setMessages((prev) => [
-      ...prev,
-      { id: uuidv4(), type: "user", content: text },
-    ]);
-
+    // user message
+    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: text }]);
     setIsBotTyping(true);
 
     try {
-      // Example fetch to your API
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
       if (!res.ok) throw new Error("Request failed");
-
       const data = await res.json();
-      const reply = data.reply || "There was an error. Please try again.";
+      const reply = data.reply || "Error. Please try again.";
 
-      // Assuming the API returns an array of strings and elements similar to knowledgeBase
       setMessages((prev) => [
         ...prev,
         {
           id: uuidv4(),
           type: "bot",
-          content: [reply], // Modify based on API response structure
-          hasCallback: true, // Use for typewriter effect
-          typed: false, // Trigger typing animation
-        },
-      ]);
-    } catch (err) {
-      console.error("Error calling /api/chatbot:", err);
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          type: "bot",
-          content: ["There was an error. Please try again."],
+          content: [reply],
           hasCallback: true,
           typed: false,
         },
       ]);
+    } catch (err) {
+      console.error("Error calling /api/chatbot:", err);
+      botReply("There was an error. Please try again.");
     } finally {
       setIsBotTyping(false);
     }
@@ -552,137 +549,115 @@ export default function ChatBotUI() {
     if (e.key === "Enter") handleSend();
   };
 
-  // Toggle chat open/close and store scroll position when closing
   const toggleChat = () => {
-   
     setIsOpen((prev) => !prev);
   };
 
+  // Called when the typed text finishes
+const handleTypewriterDone = (message) => {
+  if (!message.hasCallback) return;
 
-  
-  
+  // Mark this message fully typed
+  setMessages((prev) =>
+    prev.map((m) =>
+      m.id === message.id ? { ...m, hasCallback: false, typed: true } : m
+    )
+  );
 
-  const scrollToBottomDuringTyping = () => {
-    // No manual scrolling is needed; ScrollToBottom handles it automatically.
-  };
-  
+  setIsBotTyping(false);
 
-  const handleTypewriterDone = (message) => {
-    if (message.hasCallback) {
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg.id === message.id
-            ? { ...msg, hasCallback: false, typed: true }
-            : msg
-        )
+  // 1) Fix .includes(...) by checking the type of content[0]
+  if (
+    message.type === "bot" &&
+    Array.isArray(message.content) &&
+    message.content.length > 0 &&
+    typeof message.content[0] === "string" &&
+    message.content[0].includes("Choose a topic below:")
+  ) {
+    addMainTopics();
+    return;
+  }
+
+  // 2) If this bot message is from a subtopic, automatically show follow-ups
+  //    (assuming you stored subtopicName on the message earlier)
+  if (message.subtopicName) {
+    const mainTopicObj = knowledgeBase.find(
+      (t) => t.mainTopic === selectedMainTopic
+    );
+    if (mainTopicObj) {
+      const stObj = mainTopicObj.subtopics.find(
+        (s) => s.subtopic === message.subtopicName
       );
-
-      // If the greeting is done, display the main topics
-      if (
-        message.type === "bot" &&
-        message.content.includes(
-          "Hello! How can we assist you today? Choose a topic below:"
-        )
-      ) {
-        addMainTopics();
-      }
-
-      // Render follow-up options only after the subtopic response finishes typing
-      if (message.type === "bot") {
-        const lastEntry = navigationStack[navigationStack.length - 1];
-
-        if (lastEntry && lastEntry.type === NAV_TYPES.FOLLOW_UPS) {
-          const currentSubtopic = lastEntry.data;
-
-          // Find the subtopic object
-          const mainTopicObj = knowledgeBase.find(
-            (topic) => topic.mainTopic === selectedMainTopic
-          );
-          const subtopicObj = mainTopicObj
-            ? mainTopicObj.subtopics.find(
-                (sub) => sub.subtopic === currentSubtopic
-              )
-            : null;
-
-          if (subtopicObj && subtopicObj.followUpOptions.length > 0) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: uuidv4(),
-                type: "followUpOptions",
-                followUpOptions: subtopicObj.followUpOptions,
-                typed: true, // Static content, no typewriter effect
-              },
-            ]);
-          }
-        }
-      }
-    }
-  };
-
-  const handleBackClick = () => {
-    if (navigationStack.length === 0) {
-      console.log("Navigation Stack is empty. No action taken.");
-      return;
-    }
-
-    const newStack = [...navigationStack];
-    const lastStep = newStack.pop(); // Remove the last navigation state
-    setNavigationStack(newStack);
-
-    console.log("Navigation Stack after Back:", newStack);
-
-    if (lastStep.type === NAV_TYPES.FOLLOW_UP_RESPONSE) {
-      // Go back to follow-ups
-      setSelectedSubtopic(lastStep.data);
-
-      const mainTopicObj = knowledgeBase.find(
-        (topic) => topic.mainTopic === selectedMainTopic
-      );
-      const subtopicObj = mainTopicObj
-        ? mainTopicObj.subtopics.find(
-            (sub) => sub.subtopic === selectedSubtopic
-          )
-        : null;
-
-      if (subtopicObj && subtopicObj.followUpOptions.length > 0) {
+      if (stObj?.followUpOptions?.length > 0) {
         setMessages((prev) => [
           ...prev,
           {
             id: uuidv4(),
             type: "followUpOptions",
-            followUpOptions: subtopicObj.followUpOptions,
+            followUpOptions: stObj.followUpOptions,
             typed: true,
           },
         ]);
       }
+    }
+  }
+};
+
+  // Handle back button
+  const handleBackClick = () => {
+    if (navigationStack.length === 0) {
+      return;
+    }
+
+    const newStack = [...navigationStack];
+    const lastStep = newStack.pop();
+    setNavigationStack(newStack);
+
+    if (lastStep.type === NAV_TYPES.FOLLOW_UP_RESPONSE) {
+      // Return to the subtopic we had
+      setSelectedSubtopic(lastStep.data);
+      showSubtopicFollowUps(lastStep.data);
     } else if (lastStep.type === NAV_TYPES.FOLLOW_UPS) {
-      // Go back to subtopics
+      // Return to subtopic card listing
       setSelectedSubtopic(null);
-
-      const mainTopicObj = knowledgeBase.find(
-        (topic) => topic.mainTopic === selectedMainTopic
-      );
-
+      const mainTopicObj = knowledgeBase.find((t) => t.mainTopic === selectedMainTopic);
       if (mainTopicObj) {
         setMessages((prev) => [
           ...prev,
           {
             id: uuidv4(),
             type: "subtopicCard",
-            description: mainTopicObj.description,
-            subtopics: mainTopicObj.subtopics.map((sub) => sub.subtopic),
+            description: mainTopicObj.description || "",
+            subtopics: mainTopicObj.subtopics.map((s) => s.subtopic),
             typed: true,
           },
         ]);
       }
     } else if (lastStep.type === NAV_TYPES.SUBTOPICS) {
-      // Go back to main topics
       setSelectedMainTopic(null);
       setSelectedSubtopic(null);
       addMainTopics();
     }
   };
+
+  // Helper to re-show follow-ups for a subtopic
+  function showSubtopicFollowUps(subtopicName) {
+    const mainTopicObj = knowledgeBase.find((t) => t.mainTopic === selectedMainTopic);
+    if (!mainTopicObj) return;
+
+    const stObj = mainTopicObj.subtopics.find((s) => s.subtopic === subtopicName);
+    if (stObj && stObj.followUpOptions?.length > 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          type: "followUpOptions",
+          followUpOptions: stObj.followUpOptions,
+          typed: true,
+        },
+      ]);
+    }
+  }
 
   return (
     <ChatContainer>
@@ -700,11 +675,11 @@ export default function ChatBotUI() {
             transition={{ duration: 0.3 }}
           >
             <ChatHeader>Chat With Us</ChatHeader>
+
             <StyledScrollContainer>
-            <ChatContent>
-              {messages
-                .filter((msg) => !msg.hidden)
-                .map((msg) => {
+              <ChatContent>
+                {messages.map((msg) => {
+                  // Topic list
                   if (msg.type === "topicList") {
                     return (
                       <ChatMessage key={msg.id} type="bot">
@@ -724,18 +699,19 @@ export default function ChatBotUI() {
                     );
                   }
 
+                  // Subtopic card
                   if (msg.type === "subtopicCard") {
                     return (
                       <ChatMessage key={msg.id} type="bot">
                         <CardContainer>
                           <CardDescription>{msg.description}</CardDescription>
                           <CardButtonsWrapper>
-                            {msg.subtopics.map((subtopic) => (
+                            {msg.subtopics.map((sub) => (
                               <CardButton
-                                key={subtopic}
-                                onClick={() => handleSubtopicClick(subtopic)}
+                                key={sub}
+                                onClick={() => handleSubtopicClick(sub)}
                               >
-                                {subtopic}
+                                {sub}
                               </CardButton>
                             ))}
                           </CardButtonsWrapper>
@@ -744,34 +720,17 @@ export default function ChatBotUI() {
                     );
                   }
 
-                  if (msg.type === "subtopicResponse") {
-                    return (
-                      <ChatMessage key={msg.id} type="bot">
-                        <CardContainer>
-                          <CardDescription>Response:</CardDescription>
-                          <CardButtonsWrapper>
-                            {/* You can customize how the response is displayed */}
-                            <div>{msg.content}</div>
-                          </CardButtonsWrapper>
-                        </CardContainer>
-                      </ChatMessage>
-                    );
-                  }
-
+                  // Follow-up options
                   if (msg.type === "followUpOptions") {
                     return (
                       <ChatMessage key={msg.id} type="bot">
                         <CardContainer>
-                          <CardDescription>
-                            Select a follow-up question:
-                          </CardDescription>
+                          <CardDescription>Learn More:</CardDescription>
                           <CardButtonsWrapper>
                             {msg.followUpOptions.map((option) => (
                               <CardButton
                                 key={option.label}
-                                onClick={() =>
-                                  handleFollowUpClick(option.target)
-                                }
+                                onClick={() => handleFollowUpClick(option.target)}
                               >
                                 {option.label}
                               </CardButton>
@@ -782,45 +741,34 @@ export default function ChatBotUI() {
                     );
                   }
 
-                  if (msg.type === "followUpResponse") {
-                    return (
-                      <ChatMessage key={msg.id} type="bot">
-                        <CardContainer>
-                          <CardDescription>Follow-Up Response:</CardDescription>
-                          <CardButtonsWrapper>
-                            {/* You can customize how the follow-up response is displayed */}
-                            <div>{msg.content}</div>
-                          </CardButtonsWrapper>
-                        </CardContainer>
-                      </ChatMessage>
-                    );
-                  }
-
+                  // Otherwise normal text
                   return (
                     <ChatMessage key={msg.id} type={msg.type}>
                       <ChatBubbleContent
                         content={msg.content}
                         type={msg.type}
-                        typed={msg.typed} // Pass the typed flag
-                        onTypeProgress={scrollToBottomDuringTyping}
+                        typed={msg.typed}
+                        onTypeProgress={() => {}}
                         onTypeDone={() => handleTypewriterDone(msg)}
                       />
                     </ChatMessage>
                   );
                 })}
-              {isBotTyping && (
-                <LoaderWrapper>
-                  <Spinner />
-                </LoaderWrapper>
-              )}
-              {/* Conditionally render the BackButton */}
-              {navigationStack.length > 0 && (
-                <BackButton onClick={handleBackClick}>
-                  <FiArrowLeft size={18} /> Back
-                </BackButton>
-              )}
-            </ChatContent>
+
+                {isBotTyping && (
+                  <LoaderWrapper>
+                    <Spinner />
+                  </LoaderWrapper>
+                )}
+
+                {navigationStack.length > 0 && (
+                  <BackButton onClick={handleBackClick}>
+                    <FiArrowLeft size={18} /> Back
+                  </BackButton>
+                )}
+              </ChatContent>
             </StyledScrollContainer>
+
             <ChatFooter>
               <ChatInputContainer>
                 <ChatInput
