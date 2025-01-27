@@ -260,7 +260,7 @@ export default function ChatBotUI() {
   useEffect(() => {
     async function loadKB() {
       try {
-        const res = await fetch("https://179a-178-134-255-183.ngrok-free.app/wp-json/kb/v1/topics");
+        const res = await fetch("https://chatbot-c8e790.ingress-baronn.ewp.live/wp-json/kb/v1/topics");
         if (!res.ok) {
           throw new Error("Failed to fetch from WP");
         }
