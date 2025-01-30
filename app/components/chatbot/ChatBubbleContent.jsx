@@ -12,12 +12,11 @@ function ChatBubbleContent({ content, type, onTypeDone, onTypeProgress, typed })
       <TypedMessage
         content={content}
         onTypeDone={onTypeDone}
-        onTypeProgress={onTypeProgress} // Pass the real-time progress callback
+        onTypeProgress={onTypeProgress} 
       />
     );
   }
 
-  // For user messages, always display instantly
   return <StaticMessage content={content} />;
 }
 

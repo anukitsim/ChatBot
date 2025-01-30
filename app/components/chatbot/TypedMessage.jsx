@@ -4,20 +4,12 @@ import React from "react";
 import { WindupChildren } from "windups";
 
 function TypedMessage({ content, onTypeDone, onTypeProgress }) {
-  // Ensure content is an array or fallback to an empty string
-  const safeContent = Array.isArray(content)
-    ? content
-    : typeof content === "string"
-    ? [content]
-    : [""];
+  const safeContent = Array.isArray(content) ? content : [content];
 
   return (
-    <WindupChildren
-      onFinished={onTypeDone} // Trigger when typing is complete
-      onCharTyped={onTypeProgress} // Trigger on every character typed
-    >
+    <WindupChildren onFinished={onTypeDone} onCharTyped={onTypeProgress}>
       {safeContent.map((part, index) => (
-        <span key={index}>{part}</span>
+        <span key={index} dangerouslySetInnerHTML={{ __html: part }} />
       ))}
     </WindupChildren>
   );

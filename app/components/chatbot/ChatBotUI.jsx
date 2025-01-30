@@ -68,7 +68,7 @@ const ChatHeader = styled.div`
 `;
 
 const StyledScrollContainer = styled(ScrollToBottom).attrs({
-  // This helps smooth out scroll jumps
+  
   scrollBehavior: "smooth",
 })`
   flex: 1;
@@ -450,7 +450,7 @@ export default function ChatBotUI() {
           botReply("No follow-up found.");
           return;
         } else {
-          // We found a subtopic in the same topic matching "target"
+          //  found a subtopic in the same topic matching "target"
           setSelectedSubtopic(target);
           setMessages((prev) => [
             ...prev,
@@ -468,8 +468,8 @@ export default function ChatBotUI() {
         }
       }
 
-      // We found a matching followUp inside current subtopic
-      // Usually the .target is also a subtopic. Let's see:
+      //  found a matching followUp inside current subtopic
+     
       const followUpSubtopic = mainTopicObj.subtopics.find((s) => s.subtopic === followUp.target);
       if (followUpSubtopic) {
         setSelectedSubtopic(followUpSubtopic.subtopic);
@@ -492,7 +492,7 @@ export default function ChatBotUI() {
     }, 1200);
   };
 
-  // Simple helper to send a quick bot reply
+  // send   bot reply
   function botReply(text) {
     setMessages((prev) => [
       ...prev,
@@ -512,30 +512,25 @@ export default function ChatBotUI() {
     const text = input.trim();
     if (!text) return;
     setInput("");
-
-    // user message
+  
     setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: text }]);
     setIsBotTyping(true);
-
+  
     try {
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
+  
       if (!res.ok) throw new Error("Request failed");
+  
       const data = await res.json();
       const reply = data.reply || "Error. Please try again.";
-
+  
       setMessages((prev) => [
         ...prev,
-        {
-          id: uuidv4(),
-          type: "bot",
-          content: [reply],
-          hasCallback: true,
-          typed: false,
-        },
+        { id: uuidv4(), type: "bot", content: [reply], hasCallback: true, typed: false },
       ]);
     } catch (err) {
       console.error("Error calling /api/chatbot:", err);
@@ -544,6 +539,7 @@ export default function ChatBotUI() {
       setIsBotTyping(false);
     }
   };
+  
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") handleSend();
@@ -566,7 +562,7 @@ const handleTypewriterDone = (message) => {
 
   setIsBotTyping(false);
 
-  // 1) Fix .includes(...) by checking the type of content[0]
+  
   if (
     message.type === "bot" &&
     Array.isArray(message.content) &&
@@ -578,8 +574,7 @@ const handleTypewriterDone = (message) => {
     return;
   }
 
-  // 2) If this bot message is from a subtopic, automatically show follow-ups
-  //    (assuming you stored subtopicName on the message earlier)
+  
   if (message.subtopicName) {
     const mainTopicObj = knowledgeBase.find(
       (t) => t.mainTopic === selectedMainTopic
@@ -614,7 +609,7 @@ const handleTypewriterDone = (message) => {
     setNavigationStack(newStack);
 
     if (lastStep.type === NAV_TYPES.FOLLOW_UP_RESPONSE) {
-      // Return to the subtopic we had
+      // Return to the subtopic 
       setSelectedSubtopic(lastStep.data);
       showSubtopicFollowUps(lastStep.data);
     } else if (lastStep.type === NAV_TYPES.FOLLOW_UPS) {
@@ -741,7 +736,7 @@ const handleTypewriterDone = (message) => {
                     );
                   }
 
-                  // Otherwise normal text
+                  //  normal text
                   return (
                     <ChatMessage key={msg.id} type={msg.type}>
                       <ChatBubbleContent

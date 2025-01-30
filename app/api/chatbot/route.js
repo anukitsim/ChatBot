@@ -1,44 +1,71 @@
-const cache = new Map();
-const CACHE_LIMIT = 100;
+// app/api/chatbot/route.js
 
-export async function POST(req) {
+import { NextResponse } from 'next/server';
+
+// Initialize a simple in-memory cache using Map
+const cache = new Map();
+
+// Define a maximum cache size to prevent memory overflow
+const CACHE_LIMIT = 100; // Adjust as needed
+
+// Function to add items to the cache with size management
+function addToCache(key, value) {
+  if (cache.size >= CACHE_LIMIT) {
+    // Remove the first inserted key (FIFO) to maintain cache size
+    const firstKey = cache.keys().next().value;
+    cache.delete(firstKey);
+  }
+  cache.set(key, value);
+}
+
+export async function POST(request) {
   try {
-    const { message } = await req.json();
+    const { message } = await request.json();
 
     if (!message) {
-      return new Response(JSON.stringify({ reply: "Please provide a message." }), { status: 400 });
+      return NextResponse.json(
+        { reply: "Please provide a message." },
+        { status: 400 }
+      );
     }
 
-    // Check cache first
+    // Check if the message is in the cache
     if (cache.has(message)) {
       console.log("Cache hit for message:", message);
-      return new Response(JSON.stringify({ reply: cache.get(message) }), { status: 200 });
+      const cachedReply = cache.get(message);
+      return NextResponse.json(
+        { reply: cachedReply },
+        { status: 200 }
+      );
     }
 
-    // Prepare request for Pinecone API
-    const body = JSON.stringify({
-      messages: [{ role: "user", content: message }],
-      stream: false, // Streaming can be toggled here if supported
-      model: "gpt-4o",
-      temperature: 0.3, // Lower temperature for faster and more deterministic answers
-      top_p: 0.7, // Adjust top_p for more focused responses
-    });
+    // If not cached, call Pinecone Assistant API
+    const response = await fetch(
+      `https://prod-1-data.ke.pinecone.io/assistant/chat/${process.env.PINECONE_ASSISTANT_ID}`,
+      {
+        method: "POST",
+        headers: {
+          "Api-Key": process.env.PINECONE_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: message }],
+          stream: false,
+          model: "gpt-4o", // Ensure this is the correct model identifier
+          temperature: 0.3,
+          top_p: 0.7,
+        }),
+      }
+    );
 
-    const response = await fetch("https://prod-1-data.ke.pinecone.io/assistant/chat/mardi-assistant", {
-      method: "POST",
-      headers: {
-        "Api-Key": process.env.PINECONE_API_KEY,
-        "Content-Type": "application/json",
-      },
-      body,
-    });
-
-    // Handle non-200 responses from Pinecone
     if (!response.ok) {
       const errorData = await response.text();
       console.error("Error from Pinecone:", errorData);
-      return new Response(
-        JSON.stringify({ reply: "There was an error processing your request. Please try again later." }),
+      return NextResponse.json(
+        {
+          reply:
+            "There was an error processing your request. Please try again later.",
+        },
         { status: 500 }
       );
     }
@@ -47,16 +74,15 @@ export async function POST(req) {
     const data = await response.json();
     const reply = data.message?.content || "I'm not sure. Could you clarify?";
 
-    // Store reply in cache
-    if (cache.size >= CACHE_LIMIT) {
-      const oldestKey = cache.keys().next().value;
-      cache.delete(oldestKey); // Remove the oldest entry if cache limit is reached
-    }
-    cache.set(message, reply);
+    // Store the reply in the cache
+    addToCache(message, reply);
 
-    return new Response(JSON.stringify({ reply }), { status: 200 });
+    return NextResponse.json({ reply }, { status: 200 });
   } catch (error) {
     console.error("API Route Error:", error);
-    return new Response(JSON.stringify({ reply: "An unexpected error occurred." }), { status: 500 });
+    return NextResponse.json(
+      { reply: "An unexpected error occurred." },
+      { status: 500 }
+    );
   }
 }
