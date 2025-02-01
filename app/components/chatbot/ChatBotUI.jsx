@@ -1,3 +1,4 @@
+// components/ChatBotUI.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -9,9 +10,12 @@ import { v4 as uuidv4 } from "uuid";
 import { WindupChildren } from "windups";
 import ScrollToBottom from "react-scroll-to-bottom";
 import parseHtmlToJSXArray from "@/utils/parseHtmlToJSXArray";
+// --- NEW IMPORTS for Markdown conversion ---
+import { remark } from "remark";
+import remarkHtml from "remark-html";
 
 // ---------------------------
-// Styled Components
+// Styled Components (unchanged)
 // ---------------------------
 const ChatContainer = styled.div`
   position: fixed;
@@ -68,7 +72,6 @@ const ChatHeader = styled.div`
 `;
 
 const StyledScrollContainer = styled(ScrollToBottom).attrs({
-  
   scrollBehavior: "smooth",
 })`
   flex: 1;
@@ -134,7 +137,8 @@ const SendButton = styled.button`
 
 const ChatMessage = styled.div`
   align-self: ${({ type }) => (type === "bot" ? "flex-start" : "flex-end")};
-  background-color: ${({ type }) => (type === "bot" ? "transparent" : "#e5703a")};
+  background-color: ${({ type }) =>
+    type === "bot" ? "transparent" : "#e5703a"};
   color: ${({ type }) => (type === "bot" ? "#333" : "#fff")};
   padding: 10px 12px;
   border-radius: 16px;
@@ -260,7 +264,9 @@ export default function ChatBotUI() {
   useEffect(() => {
     async function loadKB() {
       try {
-        const res = await fetch("https://chatbot-c8e790.ingress-baronn.ewp.live/wp-json/kb/v1/topics/");
+        const res = await fetch(
+          "https://chatbot-c8e790.ingress-baronn.ewp.live/wp-json/kb/v1/topics/"
+        );
         if (!res.ok) {
           throw new Error("Failed to fetch from WP");
         }
@@ -283,7 +289,6 @@ export default function ChatBotUI() {
         console.error("Error fetching knowledge base:", err);
       }
     }
-
     loadKB();
   }, []);
 
@@ -301,9 +306,10 @@ export default function ChatBotUI() {
       {
         id: uuidv4(),
         type: "bot",
-        content: ["Hello! How can we assist you today? Choose a topic below:"],
+        content: ["Welcome to Mardi! Select a topic or ask your question"],
         hasCallback: true,
         typed: false,
+        source: "wp",
       },
     ]);
   };
@@ -317,6 +323,7 @@ export default function ChatBotUI() {
           id: uuidv4(),
           type: "bot",
           content: ["Loading topics, please wait..."],
+          source: "wp",
         },
       ]);
       return;
@@ -328,6 +335,7 @@ export default function ChatBotUI() {
         type: "topicList",
         topics: knowledgeBase.map((topic) => topic.mainTopic),
         typed: true,
+        source: "wp",
       },
     ]);
   };
@@ -338,13 +346,18 @@ export default function ChatBotUI() {
     setSelectedSubtopic(null);
 
     setNavigationStack([{ type: NAV_TYPES.SUBTOPICS, data: mainTopic }]);
-    // user message
-    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: mainTopic }]);
+    // User message
+    setMessages((prev) => [
+      ...prev,
+      { id: uuidv4(), type: "user", content: mainTopic, source: "user" },
+    ]);
 
     // Simulate bot typing
     setIsBotTyping(true);
     setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find((topic) => topic.mainTopic === mainTopic);
+      const mainTopicObj = knowledgeBase.find(
+        (topic) => topic.mainTopic === mainTopic
+      );
       if (mainTopicObj) {
         const subNames = mainTopicObj.subtopics.map((s) => s.subtopic);
         setMessages((prev) => [
@@ -355,6 +368,7 @@ export default function ChatBotUI() {
             description: mainTopicObj.description || "",
             subtopics: subNames,
             typed: true,
+            source: "wp",
           },
         ]);
       }
@@ -374,26 +388,43 @@ export default function ChatBotUI() {
       return updated;
     });
 
-    // user message
-    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: subtopic }]);
+    // User message
+    setMessages((prev) => [
+      ...prev,
+      { id: uuidv4(), type: "user", content: subtopic, source: "user" },
+    ]);
 
     setIsBotTyping(true);
     setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find((t) => t.mainTopic === selectedMainTopic);
+      const mainTopicObj = knowledgeBase.find(
+        (t) => t.mainTopic === selectedMainTopic
+      );
       if (!mainTopicObj) {
         setMessages((prev) => [
           ...prev,
-          { id: uuidv4(), type: "bot", content: ["No main topic found."] },
+          {
+            id: uuidv4(),
+            type: "bot",
+            content: ["No main topic found."],
+            source: "wp",
+          },
         ]);
         setIsBotTyping(false);
         return;
       }
 
-      const subObj = mainTopicObj.subtopics.find((s) => s.subtopic === subtopic);
+      const subObj = mainTopicObj.subtopics.find(
+        (s) => s.subtopic === subtopic
+      );
       if (!subObj) {
         setMessages((prev) => [
           ...prev,
-          { id: uuidv4(), type: "bot", content: ["Subtopic not found."] },
+          {
+            id: uuidv4(),
+            type: "bot",
+            content: ["Subtopic not found."],
+            source: "wp",
+          },
         ]);
         setIsBotTyping(false);
         return;
@@ -406,9 +437,10 @@ export default function ChatBotUI() {
           id: uuidv4(),
           type: "bot",
           content: subObj.response,
-          subtopicName: subObj.subtopic, // keep track
+          subtopicName: subObj.subtopic,
           hasCallback: true,
           typed: false,
+          source: "wp",
         },
       ]);
       setIsBotTyping(false);
@@ -419,8 +451,11 @@ export default function ChatBotUI() {
   const handleFollowUpClick = (target) => {
     setIsBotTyping(true);
 
-    // user message
-    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: target }]);
+    // User message
+    setMessages((prev) => [
+      ...prev,
+      { id: uuidv4(), type: "user", content: target, source: "user" },
+    ]);
 
     setNavigationStack((prev) => [
       ...prev.filter((e) => e.type !== NAV_TYPES.FOLLOW_UP_RESPONSE),
@@ -428,29 +463,37 @@ export default function ChatBotUI() {
     ]);
 
     setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find((topic) => topic.mainTopic === selectedMainTopic);
+      const mainTopicObj = knowledgeBase.find(
+        (topic) => topic.mainTopic === selectedMainTopic
+      );
       if (!mainTopicObj) {
         botReply("Sorry, no main topic found.");
         return;
       }
 
       // Current subtopic
-      const currentSub = mainTopicObj.subtopics.find((s) => s.subtopic === selectedSubtopic);
+      const currentSub = mainTopicObj.subtopics.find(
+        (s) => s.subtopic === selectedSubtopic
+      );
       if (!currentSub) {
         botReply("No subtopic found.");
         return;
       }
 
       // Check if followUp is in the current subtopic
-      const followUp = currentSub.followUpOptions.find((f) => f.target === target);
+      const followUp = currentSub.followUpOptions.find(
+        (f) => f.target === target
+      );
       if (!followUp) {
-        // Maybe the target is a subtopic in same main topic
-        const fallbackSub = mainTopicObj.subtopics.find((s) => s.subtopic === target);
+        // Maybe the target is a subtopic in the same main topic
+        const fallbackSub = mainTopicObj.subtopics.find(
+          (s) => s.subtopic === target
+        );
         if (!fallbackSub) {
           botReply("No follow-up found.");
           return;
         } else {
-          //  found a subtopic in the same topic matching "target"
+          // Found a subtopic in the same topic matching "target"
           setSelectedSubtopic(target);
           setMessages((prev) => [
             ...prev,
@@ -461,6 +504,7 @@ export default function ChatBotUI() {
               subtopicName: fallbackSub.subtopic,
               hasCallback: true,
               typed: false,
+              source: "wp",
             },
           ]);
           setIsBotTyping(false);
@@ -468,9 +512,10 @@ export default function ChatBotUI() {
         }
       }
 
-      //  found a matching followUp inside current subtopic
-     
-      const followUpSubtopic = mainTopicObj.subtopics.find((s) => s.subtopic === followUp.target);
+      // Found a matching followUp inside current subtopic
+      const followUpSubtopic = mainTopicObj.subtopics.find(
+        (s) => s.subtopic === followUp.target
+      );
       if (followUpSubtopic) {
         setSelectedSubtopic(followUpSubtopic.subtopic);
         setMessages((prev) => [
@@ -482,6 +527,7 @@ export default function ChatBotUI() {
             subtopicName: followUpSubtopic.subtopic,
             hasCallback: true,
             typed: false,
+            source: "wp",
           },
         ]);
       } else {
@@ -492,7 +538,7 @@ export default function ChatBotUI() {
     }, 1200);
   };
 
-  // send   bot reply
+  // Send bot reply helper for errors
   function botReply(text) {
     setMessages((prev) => [
       ...prev,
@@ -502,35 +548,55 @@ export default function ChatBotUI() {
         content: [text],
         hasCallback: true,
         typed: false,
+        source: "pinecone",
       },
     ]);
     setIsBotTyping(false);
   }
 
-  // Send user typed text
+  // --- UPDATED: handleSend function ---
   const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
     setInput("");
-  
-    setMessages((prev) => [...prev, { id: uuidv4(), type: "user", content: text }]);
+
+    // Add user message
+    setMessages((prev) => [
+      ...prev,
+      { id: uuidv4(), type: "user", content: text, source: "user" },
+    ]);
     setIsBotTyping(true);
-  
+
     try {
       const res = await fetch("/api/chatbot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
-  
+
       if (!res.ok) throw new Error("Request failed");
-  
+
       const data = await res.json();
-      const reply = data.reply || "Error. Please try again.";
-  
+      const rawReply = data.reply || "Error. Please try again.";
+      const rawReplyText =
+        typeof rawReply === "string" ? rawReply : String(rawReply);
+
+      // Convert Markdown to HTML using remark/remark-html
+      const processed = await remark().use(remarkHtml).process(rawReplyText);
+      const htmlContent = processed.toString();
+      // Convert the HTML to an array of JSX segments using your parser
+      const parsedContent = parseHtmlToJSXArray(htmlContent);
+
       setMessages((prev) => [
         ...prev,
-        { id: uuidv4(), type: "bot", content: [reply], hasCallback: true, typed: false },
+        {
+          id: uuidv4(),
+          type: "bot",
+          content: parsedContent, // an array of JSX segments
+          hasCallback: true,
+          typed: false,
+          source: "pinecone",
+        },
       ]);
     } catch (err) {
       console.error("Error calling /api/chatbot:", err);
@@ -539,7 +605,6 @@ export default function ChatBotUI() {
       setIsBotTyping(false);
     }
   };
-  
 
   const handleKeyPress = (e) => {
     if (e.key === "Enter") handleSend();
@@ -549,54 +614,56 @@ export default function ChatBotUI() {
     setIsOpen((prev) => !prev);
   };
 
-  // Called when the typed text finishes
-const handleTypewriterDone = (message) => {
-  if (!message.hasCallback) return;
+  // Called when the typewriter animation finishes
+  const handleTypewriterDone = (message) => {
+    if (!message.hasCallback) return;
 
-  // Mark this message fully typed
-  setMessages((prev) =>
-    prev.map((m) =>
-      m.id === message.id ? { ...m, hasCallback: false, typed: true } : m
-    )
-  );
-
-  setIsBotTyping(false);
-
-  
-  if (
-    message.type === "bot" &&
-    Array.isArray(message.content) &&
-    message.content.length > 0 &&
-    typeof message.content[0] === "string" &&
-    message.content[0].includes("Choose a topic below:")
-  ) {
-    addMainTopics();
-    return;
-  }
-
-  
-  if (message.subtopicName) {
-    const mainTopicObj = knowledgeBase.find(
-      (t) => t.mainTopic === selectedMainTopic
+    // Mark this message as fully typed
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === message.id ? { ...m, hasCallback: false, typed: true } : m
+      )
     );
-    if (mainTopicObj) {
-      const stObj = mainTopicObj.subtopics.find(
-        (s) => s.subtopic === message.subtopicName
-      );
-      if (stObj?.followUpOptions?.length > 0) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "followUpOptions",
-            followUpOptions: stObj.followUpOptions,
-            typed: true,
-          },
-        ]);
+
+    setIsBotTyping(false);
+
+    if (
+      message.type === "bot" &&
+      Array.isArray(message.content) &&
+      message.content.length > 0 &&
+      typeof message.content[0] === "string"
+    ) {
+      // If it's the first bot message (greeting), show topics
+      if (messages.length === 1) {
+        addMainTopics();
+        return;
       }
     }
-  }
-};
+    
+
+    if (message.subtopicName) {
+      const mainTopicObj = knowledgeBase.find(
+        (t) => t.mainTopic === selectedMainTopic
+      );
+      if (mainTopicObj) {
+        const stObj = mainTopicObj.subtopics.find(
+          (s) => s.subtopic === message.subtopicName
+        );
+        if (stObj?.followUpOptions?.length > 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: uuidv4(),
+              type: "followUpOptions",
+              followUpOptions: stObj.followUpOptions,
+              typed: true,
+              source: "wp",
+            },
+          ]);
+        }
+      }
+    }
+  };
 
   // Handle back button
   const handleBackClick = () => {
@@ -609,13 +676,15 @@ const handleTypewriterDone = (message) => {
     setNavigationStack(newStack);
 
     if (lastStep.type === NAV_TYPES.FOLLOW_UP_RESPONSE) {
-      // Return to the subtopic 
+      // Return to the subtopic
       setSelectedSubtopic(lastStep.data);
       showSubtopicFollowUps(lastStep.data);
     } else if (lastStep.type === NAV_TYPES.FOLLOW_UPS) {
       // Return to subtopic card listing
       setSelectedSubtopic(null);
-      const mainTopicObj = knowledgeBase.find((t) => t.mainTopic === selectedMainTopic);
+      const mainTopicObj = knowledgeBase.find(
+        (t) => t.mainTopic === selectedMainTopic
+      );
       if (mainTopicObj) {
         setMessages((prev) => [
           ...prev,
@@ -625,6 +694,7 @@ const handleTypewriterDone = (message) => {
             description: mainTopicObj.description || "",
             subtopics: mainTopicObj.subtopics.map((s) => s.subtopic),
             typed: true,
+            source: "wp",
           },
         ]);
       }
@@ -637,10 +707,14 @@ const handleTypewriterDone = (message) => {
 
   // Helper to re-show follow-ups for a subtopic
   function showSubtopicFollowUps(subtopicName) {
-    const mainTopicObj = knowledgeBase.find((t) => t.mainTopic === selectedMainTopic);
+    const mainTopicObj = knowledgeBase.find(
+      (t) => t.mainTopic === selectedMainTopic
+    );
     if (!mainTopicObj) return;
 
-    const stObj = mainTopicObj.subtopics.find((s) => s.subtopic === subtopicName);
+    const stObj = mainTopicObj.subtopics.find(
+      (s) => s.subtopic === subtopicName
+    );
     if (stObj && stObj.followUpOptions?.length > 0) {
       setMessages((prev) => [
         ...prev,
@@ -649,6 +723,7 @@ const handleTypewriterDone = (message) => {
           type: "followUpOptions",
           followUpOptions: stObj.followUpOptions,
           typed: true,
+          source: "wp",
         },
       ]);
     }
@@ -674,7 +749,7 @@ const handleTypewriterDone = (message) => {
             <StyledScrollContainer>
               <ChatContent>
                 {messages.map((msg) => {
-                  // Topic list
+                  // Render topic list, subtopic card, follow-up options as before...
                   if (msg.type === "topicList") {
                     return (
                       <ChatMessage key={msg.id} type="bot">
@@ -694,7 +769,6 @@ const handleTypewriterDone = (message) => {
                     );
                   }
 
-                  // Subtopic card
                   if (msg.type === "subtopicCard") {
                     return (
                       <ChatMessage key={msg.id} type="bot">
@@ -715,7 +789,6 @@ const handleTypewriterDone = (message) => {
                     );
                   }
 
-                  // Follow-up options
                   if (msg.type === "followUpOptions") {
                     return (
                       <ChatMessage key={msg.id} type="bot">
@@ -736,15 +809,16 @@ const handleTypewriterDone = (message) => {
                     );
                   }
 
-                  //  normal text
+                  // Normal text message
                   return (
                     <ChatMessage key={msg.id} type={msg.type}>
                       <ChatBubbleContent
                         content={msg.content}
                         type={msg.type}
                         typed={msg.typed}
-                        onTypeProgress={() => {}}
                         onTypeDone={() => handleTypewriterDone(msg)}
+                        onTypeProgress={() => {}}
+                        source={msg.source}
                       />
                     </ChatMessage>
                   );

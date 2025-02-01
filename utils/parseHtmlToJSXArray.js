@@ -3,6 +3,11 @@
 import parse, { domToReact } from "html-react-parser";
 import React from "react";
 
+// Optional: Helper function to process text nodes for emails and phone numbers (if desired)
+function processTextNode(text) {
+  return text;
+}
+
 // Simple global key generator
 let globalKey = 0;
 function getKey() {
@@ -19,50 +24,90 @@ export default function parseHtmlToJSXArray(htmlString) {
   return ensureArray(
     parse(htmlString, {
       replace: (domNode) => {
-        // Debug: Log each node so you can see what's being parsed
-        // NOTE: uncomment if you need to see exactly which node is failing
-        // console.log("Parsing domNode:", domNode);
-
         // 1) Handle Text Node
         if (domNode.type === "text") {
-          return domNode.data; // plain string
+          return processTextNode(domNode.data);
         }
 
-        // 2) Handle Comments/Directives/Scripts/etc.
+        // 2) Skip comments, scripts, directives, and style tags
         if (
           domNode.type === "comment" ||
           domNode.type === "script" ||
           domNode.type === "directive" ||
-          domNode.name === "style"  // skip <style> if present
+          domNode.name === "style"
         ) {
-          return null; // skip
+          return null;
         }
 
-        // 3) Handle Tag Nodes
+        // 3) Handle Tag Nodes with custom styling/class names
         if (domNode.type === "tag") {
-          // If domNode.name is not a valid string, skip
           if (typeof domNode.name !== "string" || !domNode.name) {
             return null;
           }
-          // Recursively convert children
+          let customProps = { key: getKey(), ...domNode.attribs };
+
+          if (domNode.name === "a") {
+            // Apply inline styles so that every link is distinguished
+            customProps.style = {
+              color: "#e5703a",
+              textDecoration: "underline",
+              ...customProps.style,
+            };
+            customProps.className = customProps.className
+              ? customProps.className + " rich-link"
+              : "rich-link";
+          } else if (domNode.name === "ul") {
+            // Force disc bullets and add padding/margin for unordered lists
+            customProps.style = {
+              paddingLeft: "20px",
+              marginBottom: "1em",
+              listStyleType: "disc",
+              ...customProps.style,
+            };
+            customProps.className = customProps.className
+              ? customProps.className + " rich-list"
+              : "rich-list";
+          } else if (domNode.name === "ol") {
+            // For ordered lists: use decimal markers
+            customProps.style = {
+              paddingLeft: "20px",
+              marginBottom: "1em",
+              listStyleType: "decimal",
+              ...customProps.style,
+            };
+            customProps.className = customProps.className
+              ? customProps.className + " rich-list"
+              : "rich-list";
+          } else if (domNode.name === "li") {
+            // Check if this <li> contains only a link; if so, remove the bullet marker.
+            const childrenNodes = domNode.children || [];
+            const isOnlyLink =
+              childrenNodes.length === 1 &&
+              childrenNodes[0].type === "tag" &&
+              childrenNodes[0].name === "a";
+            customProps.style = {
+              marginBottom: "0.5em",
+              listStyleType: isOnlyLink ? "none" : "inherit",
+              ...customProps.style,
+            };
+            customProps.className = customProps.className
+              ? customProps.className + " rich-list-item"
+              : "rich-list-item";
+          }
+
+          // Recursively convert children. For text children, process them as needed.
           const children = domToReact(domNode.children, {
             replace: (childNode) => {
               if (childNode.type === "text") {
-                return childNode.data; // plain string
+                return processTextNode(childNode.data);
               }
-              // Let parser handle nested tags by returning undefined
               return undefined;
             },
           });
-          // Return a valid React element
-          return React.createElement(
-            domNode.name,
-            { key: getKey(), ...domNode.attribs },
-            children
-          );
+          return React.createElement(domNode.name, customProps, children);
         }
 
-        // 4) Fallback - skip unknown node types
+        // 4) Fallback: skip unknown node types
         return null;
       },
     })
@@ -70,12 +115,8 @@ export default function parseHtmlToJSXArray(htmlString) {
 }
 
 /**
- * ensureArray: If parse(...) returns a single element/string,
- * wrap it in an array so we always return an array of segments.
+ * ensureArray: Wraps a single element/string in an array if needed.
  */
 function ensureArray(parsedResult) {
-  if (Array.isArray(parsedResult)) {
-    return parsedResult;
-  }
-  return [parsedResult];
+  return Array.isArray(parsedResult) ? parsedResult : [parsedResult];
 }
