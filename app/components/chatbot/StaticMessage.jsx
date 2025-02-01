@@ -1,4 +1,3 @@
-// components/StaticMessage.jsx
 "use client";
 
 import React from "react";

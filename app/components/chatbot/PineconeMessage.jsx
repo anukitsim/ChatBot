@@ -5,7 +5,18 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 
-// Custom components for structured rendering
+/**
+ * Pre-process the Markdown string by replacing phone numbers with clickable links.
+ */
+function linkifyPhoneNumbersInMarkdown(markdown) {
+  const phoneRegex = /(\+?\s*\(?\d{1,4}\)?[\d\-\s\(\)]{7,}\d)/g;
+  return markdown.replace(phoneRegex, (match) => {
+    const telNumber = match.replace(/\s+/g, "");
+    return `<a href="tel:${telNumber}" style="color: #e5703a; text-decoration: underline;">${match}</a>`;
+  });
+}
+
+// Custom components for Markdown rendering.
 const MarkdownComponents = {
   a: ({ node, ...props }) => (
     <a
@@ -32,13 +43,16 @@ const MarkdownComponents = {
 export default function PineconeMessage({ content }) {
   if (!content) return null;
 
+  // Pre-process the Markdown content to inject clickable phone links.
+  const processedContent = linkifyPhoneNumbersInMarkdown(content);
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeRaw]}
       components={MarkdownComponents}
     >
-      {content}
+      {processedContent}
     </ReactMarkdown>
   );
 }

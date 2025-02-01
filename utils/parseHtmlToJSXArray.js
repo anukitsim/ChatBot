@@ -1,14 +1,54 @@
 "use client";
 
-import parse, { domToReact } from "html-react-parser";
 import React from "react";
+import parse, { domToReact } from "html-react-parser";
 
-// Optional: Helper function to process text nodes for emails and phone numbers (if desired)
-function processTextNode(text) {
-  return text;
+/**
+ * Pre-process the HTML string by replacing phone numbers with clickable links.
+ *
+ * This function looks for phone numbers in the format:
+ *    + (995) 574 20 20 20   or   +995 574 20 20 20
+ */
+function linkifyPhoneNumbersInHTML(html) {
+  // This regex should match your phone number examples.
+  const phoneRegex = /(\+?\s*\(?\d{1,4}\)?[\d\-\s\(\)]{7,}\d)/g;
+  return html.replace(phoneRegex, (match) => {
+    // Remove spaces for the href value.
+    const telNumber = match.replace(/\s+/g, "");
+    return `<a href="tel:${telNumber}" style="color: #e5703a; text-decoration: underline;">${match}</a>`;
+  });
 }
 
-// Simple global key generator
+/**
+ * Updated helper function to process text nodes and convert phone numbers
+ * into clickable <a href="tel:..."> links.
+ */
+function processTextNode(text) {
+  // Updated regex to match phone numbers such as:
+  // "+995 574 20 20 20" or "+ (995) 574 20 20 20"
+  const phoneRegex = /(\+?\s*\(?\d{1,4}\)?[\d\-\s\(\)]{7,}\d)/g;
+  const parts = text.split(phoneRegex);
+  if (parts.length === 1) return text;
+
+  return parts.map((part, index) => {
+    if (phoneRegex.test(part)) {
+      // Remove whitespace for the tel: href so it works properly on mobile
+      const telNumber = part.replace(/\s+/g, "");
+      return (
+        <a
+          key={`phone-${index}`}
+          href={`tel:${telNumber}`}
+          style={{ color: "#e5703a", textDecoration: "underline" }}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
+// Simple global key generator for unique keys.
 let globalKey = 0;
 function getKey() {
   return `wp-html-${globalKey++}`;
@@ -21,10 +61,13 @@ function getKey() {
 export default function parseHtmlToJSXArray(htmlString) {
   if (!htmlString) return [];
 
+  // Pre-process the HTML to inject clickable phone links.
+  const processedHtml = linkifyPhoneNumbersInHTML(htmlString);
+
   return ensureArray(
-    parse(htmlString, {
+    parse(processedHtml, {
       replace: (domNode) => {
-        // 1) Handle Text Node
+        // 1) Handle Text Nodes
         if (domNode.type === "text") {
           return processTextNode(domNode.data);
         }
@@ -47,7 +90,7 @@ export default function parseHtmlToJSXArray(htmlString) {
           let customProps = { key: getKey(), ...domNode.attribs };
 
           if (domNode.name === "a") {
-            // Apply inline styles so that every link is distinguished
+            // Style links
             customProps.style = {
               color: "#e5703a",
               textDecoration: "underline",
@@ -79,15 +122,9 @@ export default function parseHtmlToJSXArray(htmlString) {
               ? customProps.className + " rich-list"
               : "rich-list";
           } else if (domNode.name === "li") {
-            // Check if this <li> contains only a link; if so, remove the bullet marker.
-            const childrenNodes = domNode.children || [];
-            const isOnlyLink =
-              childrenNodes.length === 1 &&
-              childrenNodes[0].type === "tag" &&
-              childrenNodes[0].name === "a";
+            // Removed the conditional that removed bullets for list items that only contain a link.
             customProps.style = {
               marginBottom: "0.5em",
-              listStyleType: isOnlyLink ? "none" : "inherit",
               ...customProps.style,
             };
             customProps.className = customProps.className
@@ -95,7 +132,7 @@ export default function parseHtmlToJSXArray(htmlString) {
               : "rich-list-item";
           }
 
-          // Recursively convert children. For text children, process them as needed.
+          // Recursively process children (including phone number replacement)
           const children = domToReact(domNode.children, {
             replace: (childNode) => {
               if (childNode.type === "text") {
