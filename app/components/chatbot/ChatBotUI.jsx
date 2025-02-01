@@ -13,6 +13,7 @@ import parseHtmlToJSXArray from "@/utils/parseHtmlToJSXArray";
 // --- NEW IMPORTS for Markdown conversion ---
 import { remark } from "remark";
 import remarkHtml from "remark-html";
+import parseMarkdownToJSXArray from "@/utils/parseMarkdownToJSXArray";
 
 // ---------------------------
 // Styled Components (unchanged)
@@ -581,11 +582,10 @@ export default function ChatBotUI() {
       const rawReplyText =
         typeof rawReply === "string" ? rawReply : String(rawReply);
 
-      // Convert Markdown to HTML using remark/remark-html
-      const processed = await remark().use(remarkHtml).process(rawReplyText);
-      const htmlContent = processed.toString();
-      // Convert the HTML to an array of JSX segments using your parser
-      const parsedContent = parseHtmlToJSXArray(htmlContent);
+     // For pinecone responses, use our dedicated markdown-to-JSX converter.
+
+      const parsedContent = await parseMarkdownToJSXArray(rawReplyText);
+
 
       setMessages((prev) => [
         ...prev,
