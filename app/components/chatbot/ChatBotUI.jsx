@@ -1,27 +1,26 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { FiSend, FiMessageSquare, FiX, FiArrowLeft } from "react-icons/fi";
+import { FiSend, FiMessageSquare, FiX } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import styled from "styled-components";
 import ChatBubbleContent from "./ChatBubbleContent";
 import { v4 as uuidv4 } from "uuid";
-import { WindupChildren } from "windups";
 import ScrollToBottom from "react-scroll-to-bottom";
-import parseHtmlToJSXArray from "@/utils/parseHtmlToJSXArray";
-// --- NEW IMPORTS for Markdown conversion ---
-import { remark } from "remark";
-import remarkHtml from "remark-html";
 import parseMarkdownToJSXArray from "@/utils/parseMarkdownToJSXArray";
 
-// ---------------------------
-// Styled Components (unchanged)
-// ---------------------------
+// 1) Make the container "relative" and fill the iframe
 const ChatContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
   font-family: "Poppins", sans-serif;
 `;
 
 const ChatBubbleIcon = styled(motion.button)`
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
   width: 60px;
   height: 60px;
   background-color: #e5703a;
@@ -42,14 +41,14 @@ const ChatBubbleIcon = styled(motion.button)`
 `;
 
 const ChatBox = styled(motion.div)`
+  position: absolute;
+  bottom: 80px; /* 20px + 60px bubble = 80px total */
+  right: 20px;
   width: 360px;
   height: 500px;
   background-color: #fff;
   border: 1px solid #e5703a;
   border-radius: 12px;
-  position: absolute;
-  bottom: 70px;
-  right: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -133,8 +132,7 @@ const SendButton = styled.button`
 
 const ChatMessage = styled.div`
   align-self: ${({ type }) => (type === "bot" ? "flex-start" : "flex-end")};
-  background-color: ${({ type }) =>
-    type === "bot" ? "transparent" : "#e5703a"};
+  background-color: ${({ type }) => (type === "bot" ? "transparent" : "#e5703a")};
   color: ${({ type }) => (type === "bot" ? "#333" : "#fff")};
   padding: 10px 12px;
   border-radius: 16px;
@@ -142,32 +140,10 @@ const ChatMessage = styled.div`
   word-wrap: break-word;
   font-size: 14px;
   line-height: 1.5;
-  border: ${({ type }) =>
-    type === "bot" ? "1px solid rgba(0, 0, 0, 0.1)" : "none"};
-  box-shadow: ${({ type }) =>
-    type === "bot" ? "0 2px 4px rgba(0, 0, 0, 0.1)" : "none"};
+  border: ${({ type }) => (type === "bot" ? "1px solid rgba(0, 0, 0, 0.1)" : "none")};
+  box-shadow: ${({ type }) => (type === "bot" ? "0 2px 4px rgba(0, 0, 0, 0.1)" : "none")};
   backdrop-filter: blur(10px);
   background-clip: padding-box;
-`;
-
-const LoaderWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const Spinner = styled.div`
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  border-top: 4px solid #e5703a;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  animation: spin 1s linear infinite;
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
 `;
 
 const chatBoxVariants = {
@@ -175,66 +151,20 @@ const chatBoxVariants = {
   exit: { opacity: 0, y: 0 },
 };
 
-// const NAV_TYPES = {
-//   SUBTOPICS: "subtopics",
-//   FOLLOW_UPS: "followUps",
-//   FOLLOW_UP_RESPONSE: "followUpResponse",
-// };
-
 export default function ChatBotUI() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
-  // Commenting out WordPress KB states
-  // const [knowledgeBase, setKnowledgeBase] = useState([]);
-  // const [selectedMainTopic, setSelectedMainTopic] = useState(null);
-  // const [selectedSubtopic, setSelectedSubtopic] = useState(null);
-  // const [navigationStack, setNavigationStack] = useState([]);
   const [input, setInput] = useState("");
   const [isBotTyping, setIsBotTyping] = useState(false);
 
-  // Commented out WP data fetch on mount
-  /*
-  useEffect(() => {
-    async function loadKB() {
-      try {
-        const res = await fetch(
-          "https://chatbot-c8e790.ingress-baronn.ewp.live/wp-json/kb/v1/topics/"
-        );
-        if (!res.ok) {
-          throw new Error("Failed to fetch from WP");
-        }
-        const data = await res.json();
-        // Transform WP data → old shape
-        const newKB = data.map((topic) => {
-          return {
-            mainTopic: topic.mainTopic,
-            description: topic.description,
-            subtopics: topic.subtopics.map((sub) => ({
-              subtopic: sub.subtopic,
-              // Convert raw HTML to an array of strings/JSX
-              response: parseHtmlToJSXArray(sub.response),
-              followUpOptions: sub.followUpOptions || [],
-            })),
-          };
-        });
-        setKnowledgeBase(newKB);
-      } catch (err) {
-        console.error("Error fetching knowledge base:", err);
-      }
-    }
-    loadKB();
-  }, []);
-  */
-
-  // On open, simply add a greeting message
+  // On open, if no messages, show greeting
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       addGreeting();
     }
   }, [isOpen]);
 
-  // Greeting: updated message and source changed to "pinecone"
-  const addGreeting = () => {
+  function addGreeting() {
     setMessages((prev) => [
       ...prev,
       {
@@ -246,230 +176,8 @@ export default function ChatBotUI() {
         source: "pinecone",
       },
     ]);
-  };
-
-  // Commenting out WordPress-specific functions
-  /*
-  const addMainTopics = () => {
-    if (!knowledgeBase || knowledgeBase.length === 0) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          type: "bot",
-          content: ["Loading topics, please wait..."],
-          source: "wp",
-        },
-      ]);
-      return;
-    }
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: uuidv4(),
-        type: "topicList",
-        topics: knowledgeBase.map((topic) => topic.mainTopic),
-        typed: true,
-        source: "wp",
-      },
-    ]);
-  };
-
-  const handleMainTopicClick = (mainTopic) => {
-    setSelectedMainTopic(mainTopic);
-    setSelectedSubtopic(null);
-    setNavigationStack([{ type: NAV_TYPES.SUBTOPICS, data: mainTopic }]);
-    setMessages((prev) => [
-      ...prev,
-      { id: uuidv4(), type: "user", content: mainTopic, source: "user" },
-    ]);
-    setIsBotTyping(true);
-    setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find(
-        (topic) => topic.mainTopic === mainTopic
-      );
-      if (mainTopicObj) {
-        const subNames = mainTopicObj.subtopics.map((s) => s.subtopic);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "subtopicCard",
-            description: mainTopicObj.description || "",
-            subtopics: subNames,
-            typed: true,
-            source: "wp",
-          },
-        ]);
-      }
-      setIsBotTyping(false);
-    }, 1200);
-  };
-
-  const handleSubtopicClick = (subtopic) => {
-    setSelectedSubtopic(subtopic);
-    setNavigationStack((prev) => {
-      const updated = [
-        ...prev.filter((entry) => entry.type !== NAV_TYPES.FOLLOW_UPS),
-        { type: NAV_TYPES.FOLLOW_UPS, data: subtopic },
-      ];
-      return updated;
-    });
-    setMessages((prev) => [
-      ...prev,
-      { id: uuidv4(), type: "user", content: subtopic, source: "user" },
-    ]);
-    setIsBotTyping(true);
-    setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find(
-        (t) => t.mainTopic === selectedMainTopic
-      );
-      if (!mainTopicObj) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: ["No main topic found."],
-            source: "wp",
-          },
-        ]);
-        setIsBotTyping(false);
-        return;
-      }
-      const subObj = mainTopicObj.subtopics.find(
-        (s) => s.subtopic === subtopic
-      );
-      if (!subObj) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: ["Subtopic not found."],
-            source: "wp",
-          },
-        ]);
-        setIsBotTyping(false);
-        return;
-      }
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          type: "bot",
-          content: subObj.response,
-          subtopicName: subObj.subtopic,
-          hasCallback: true,
-          typed: false,
-          source: "wp",
-        },
-      ]);
-      setIsBotTyping(false);
-    }, 1200);
-  };
-
-  const handleFollowUpClick = (target) => {
-    setIsBotTyping(true);
-    setMessages((prev) => [
-      ...prev,
-      { id: uuidv4(), type: "user", content: target, source: "user" },
-    ]);
-    setNavigationStack((prev) => [
-      ...prev.filter((e) => e.type !== NAV_TYPES.FOLLOW_UP_RESPONSE),
-      { type: NAV_TYPES.FOLLOW_UP_RESPONSE, data: target },
-    ]);
-    setTimeout(() => {
-      const mainTopicObj = knowledgeBase.find(
-        (topic) => topic.mainTopic === selectedMainTopic
-      );
-      if (!mainTopicObj) {
-        botReply("Sorry, no main topic found.");
-        return;
-      }
-      const currentSub = mainTopicObj.subtopics.find(
-        (s) => s.subtopic === selectedSubtopic
-      );
-      if (!currentSub) {
-        botReply("No subtopic found.");
-        return;
-      }
-      const followUp = currentSub.followUpOptions.find(
-        (f) => f.target === target
-      );
-      if (!followUp) {
-        const fallbackSub = mainTopicObj.subtopics.find(
-          (s) => s.subtopic === target
-        );
-        if (!fallbackSub) {
-          botReply("No follow-up found.");
-          return;
-        } else {
-          setSelectedSubtopic(target);
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: uuidv4(),
-              type: "bot",
-              content: fallbackSub.response,
-              subtopicName: fallbackSub.subtopic,
-              hasCallback: true,
-              typed: false,
-              source: "wp",
-            },
-          ]);
-          setIsBotTyping(false);
-          return;
-        }
-      }
-      const followUpSubtopic = mainTopicObj.subtopics.find(
-        (s) => s.subtopic === followUp.target
-      );
-      if (followUpSubtopic) {
-        setSelectedSubtopic(followUpSubtopic.subtopic);
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "bot",
-            content: followUpSubtopic.response,
-            subtopicName: followUpSubtopic.subtopic,
-            hasCallback: true,
-            typed: false,
-            source: "wp",
-          },
-        ]);
-      } else {
-        botReply("Sorry, no response found for that follow-up.");
-      }
-      setIsBotTyping(false);
-    }, 1200);
-  };
-
-  function showSubtopicFollowUps(subtopicName) {
-    const mainTopicObj = knowledgeBase.find(
-      (t) => t.mainTopic === selectedMainTopic
-    );
-    if (!mainTopicObj) return;
-    const stObj = mainTopicObj.subtopics.find(
-      (s) => s.subtopic === subtopicName
-    );
-    if (stObj && stObj.followUpOptions?.length > 0) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          type: "followUpOptions",
-          followUpOptions: stObj.followUpOptions,
-          typed: true,
-          source: "wp",
-        },
-      ]);
-    }
   }
-  */
 
-  // Send bot reply helper for errors (unchanged)
   function botReply(text) {
     setMessages((prev) => [
       ...prev,
@@ -485,13 +193,11 @@ export default function ChatBotUI() {
     setIsBotTyping(false);
   }
 
-  // --- handleSend function remains unchanged ---
   const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
     setInput("");
 
-    // Add user message
     setMessages((prev) => [
       ...prev,
       { id: uuidv4(), type: "user", content: text, source: "user" },
@@ -509,10 +215,7 @@ export default function ChatBotUI() {
 
       const data = await res.json();
       const rawReply = data.reply || "Error. Please try again.";
-      const rawReplyText =
-        typeof rawReply === "string" ? rawReply : String(rawReply);
-
-      // For pinecone responses, use our dedicated markdown-to-JSX converter.
+      const rawReplyText = typeof rawReply === "string" ? rawReply : String(rawReply);
       const parsedContent = await parseMarkdownToJSXArray(rawReplyText);
 
       setMessages((prev) => [
@@ -520,7 +223,7 @@ export default function ChatBotUI() {
         {
           id: uuidv4(),
           type: "bot",
-          content: parsedContent, // an array of JSX segments
+          content: parsedContent,
           hasCallback: true,
           typed: false,
           source: "pinecone",
@@ -539,13 +242,11 @@ export default function ChatBotUI() {
   };
 
   const toggleChat = () => {
-    setIsOpen((prev) => !prev);
+    setIsOpen(!isOpen);
   };
 
-  // Simplified typewriter finish handler – removed WP follow-up logic
   const handleTypewriterDone = (message) => {
     if (!message.hasCallback) return;
-
     setMessages((prev) =>
       prev.map((m) =>
         m.id === message.id ? { ...m, hasCallback: false, typed: true } : m
@@ -553,8 +254,6 @@ export default function ChatBotUI() {
     );
     setIsBotTyping(false);
   };
-
-  // Removed handleBackClick as it's related to WP navigation
 
   return (
     <ChatContainer>
@@ -572,34 +271,22 @@ export default function ChatBotUI() {
             transition={{ duration: 0.3 }}
           >
             <ChatHeader>Chat With Us</ChatHeader>
-
             <StyledScrollContainer>
               <ChatContent>
-                {messages.map((msg) => {
-                  // Removed rendering for topicList, subtopicCard, and followUpOptions
-                  // Render normal text messages only
-                  return (
-                    <ChatMessage key={msg.id} type={msg.type}>
-                      <ChatBubbleContent
-                        content={msg.content}
-                        type={msg.type}
-                        typed={msg.typed}
-                        onTypeDone={() => handleTypewriterDone(msg)}
-                        onTypeProgress={() => {}}
-                        source={msg.source}
-                      />
-                    </ChatMessage>
-                  );
-                })}
-
-                {isBotTyping && (
-                  <LoaderWrapper>
-                    <Spinner />
-                  </LoaderWrapper>
-                )}
+                {messages.map((msg) => (
+                  <ChatMessage key={msg.id} type={msg.type}>
+                    <ChatBubbleContent
+                      content={msg.content}
+                      type={msg.type}
+                      typed={msg.typed}
+                      onTypeDone={() => handleTypewriterDone(msg)}
+                      source={msg.source}
+                    />
+                  </ChatMessage>
+                ))}
+                {isBotTyping && <div>Loading…</div>}
               </ChatContent>
             </StyledScrollContainer>
-
             <ChatFooter>
               <ChatInputContainer>
                 <ChatInput
