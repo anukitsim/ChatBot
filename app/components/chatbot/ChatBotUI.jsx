@@ -1,4 +1,3 @@
-// components/ChatBotUI.jsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -19,10 +18,6 @@ import parseMarkdownToJSXArray from "@/utils/parseMarkdownToJSXArray";
 // Styled Components (unchanged)
 // ---------------------------
 const ChatContainer = styled.div`
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 1000;
   font-family: "Poppins", sans-serif;
 `;
 
@@ -155,71 +150,6 @@ const ChatMessage = styled.div`
   background-clip: padding-box;
 `;
 
-const CardContainer = styled.div`
-  background-color: #fefefe;
-  border-radius: 10px;
-  padding: 16px;
-  margin-top: 4px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border-left: 4px solid #e5703a;
-`;
-
-const CardDescription = styled.div`
-  font-size: 14px;
-  color: #e5703a;
-  margin-bottom: 12px;
-`;
-
-const CardButtonsWrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 10px;
-`;
-
-const CardButton = styled.button`
-  background-color: #fff;
-  color: #333;
-  border: 1px solid #dcdcdc;
-  border-radius: 8px;
-  padding: 8px 10px;
-  text-align: left;
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
-  width: 100%;
-  &:hover {
-    background-color: #e5703a;
-    color: #fff;
-    border-color: #e5703a;
-  }
-`;
-
-const BackButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  background-color: #e5703a;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 10px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s, transform 0.15s;
-  width: 100%;
-  text-align: left;
-  margin-top: 10px;
-
-  &:hover {
-    background-color: #d55d2f;
-    transform: scale(1.02);
-  }
-  svg {
-    margin-right: 8px;
-  }
-`;
-
 const LoaderWrapper = styled.div`
   display: flex;
   align-items: center;
@@ -245,23 +175,25 @@ const chatBoxVariants = {
   exit: { opacity: 0, y: 0 },
 };
 
-const NAV_TYPES = {
-  SUBTOPICS: "subtopics",
-  FOLLOW_UPS: "followUps",
-  FOLLOW_UP_RESPONSE: "followUpResponse",
-};
+// const NAV_TYPES = {
+//   SUBTOPICS: "subtopics",
+//   FOLLOW_UPS: "followUps",
+//   FOLLOW_UP_RESPONSE: "followUpResponse",
+// };
 
 export default function ChatBotUI() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
-  const [knowledgeBase, setKnowledgeBase] = useState([]);
-  const [selectedMainTopic, setSelectedMainTopic] = useState(null);
-  const [selectedSubtopic, setSelectedSubtopic] = useState(null);
-  const [navigationStack, setNavigationStack] = useState([]);
+  // Commenting out WordPress KB states
+  // const [knowledgeBase, setKnowledgeBase] = useState([]);
+  // const [selectedMainTopic, setSelectedMainTopic] = useState(null);
+  // const [selectedSubtopic, setSelectedSubtopic] = useState(null);
+  // const [navigationStack, setNavigationStack] = useState([]);
   const [input, setInput] = useState("");
   const [isBotTyping, setIsBotTyping] = useState(false);
 
-  // 1. Fetch WP data on mount
+  // Commented out WP data fetch on mount
+  /*
   useEffect(() => {
     async function loadKB() {
       try {
@@ -292,30 +224,32 @@ export default function ChatBotUI() {
     }
     loadKB();
   }, []);
+  */
 
-  // 2. Open chat => show greeting if no messages
+  // On open, simply add a greeting message
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       addGreeting();
     }
   }, [isOpen]);
 
-  // Greeting
+  // Greeting: updated message and source changed to "pinecone"
   const addGreeting = () => {
     setMessages((prev) => [
       ...prev,
       {
         id: uuidv4(),
         type: "bot",
-        content: ["Welcome to Mardi! Select a topic or ask your question"],
+        content: ["Welcome to Mardi! please ask your question."],
         hasCallback: true,
         typed: false,
-        source: "wp",
+        source: "pinecone",
       },
     ]);
   };
 
-  // Show main topics
+  // Commenting out WordPress-specific functions
+  /*
   const addMainTopics = () => {
     if (!knowledgeBase || knowledgeBase.length === 0) {
       setMessages((prev) => [
@@ -341,19 +275,14 @@ export default function ChatBotUI() {
     ]);
   };
 
-  // Handle main topic
   const handleMainTopicClick = (mainTopic) => {
     setSelectedMainTopic(mainTopic);
     setSelectedSubtopic(null);
-
     setNavigationStack([{ type: NAV_TYPES.SUBTOPICS, data: mainTopic }]);
-    // User message
     setMessages((prev) => [
       ...prev,
       { id: uuidv4(), type: "user", content: mainTopic, source: "user" },
     ]);
-
-    // Simulate bot typing
     setIsBotTyping(true);
     setTimeout(() => {
       const mainTopicObj = knowledgeBase.find(
@@ -377,10 +306,8 @@ export default function ChatBotUI() {
     }, 1200);
   };
 
-  // Handle subtopic
   const handleSubtopicClick = (subtopic) => {
     setSelectedSubtopic(subtopic);
-
     setNavigationStack((prev) => {
       const updated = [
         ...prev.filter((entry) => entry.type !== NAV_TYPES.FOLLOW_UPS),
@@ -388,13 +315,10 @@ export default function ChatBotUI() {
       ];
       return updated;
     });
-
-    // User message
     setMessages((prev) => [
       ...prev,
       { id: uuidv4(), type: "user", content: subtopic, source: "user" },
     ]);
-
     setIsBotTyping(true);
     setTimeout(() => {
       const mainTopicObj = knowledgeBase.find(
@@ -413,7 +337,6 @@ export default function ChatBotUI() {
         setIsBotTyping(false);
         return;
       }
-
       const subObj = mainTopicObj.subtopics.find(
         (s) => s.subtopic === subtopic
       );
@@ -430,8 +353,6 @@ export default function ChatBotUI() {
         setIsBotTyping(false);
         return;
       }
-
-      // Add the subtopic's content & store subtopicName
       setMessages((prev) => [
         ...prev,
         {
@@ -448,21 +369,16 @@ export default function ChatBotUI() {
     }, 1200);
   };
 
-  // Handle follow-up click
   const handleFollowUpClick = (target) => {
     setIsBotTyping(true);
-
-    // User message
     setMessages((prev) => [
       ...prev,
       { id: uuidv4(), type: "user", content: target, source: "user" },
     ]);
-
     setNavigationStack((prev) => [
       ...prev.filter((e) => e.type !== NAV_TYPES.FOLLOW_UP_RESPONSE),
       { type: NAV_TYPES.FOLLOW_UP_RESPONSE, data: target },
     ]);
-
     setTimeout(() => {
       const mainTopicObj = knowledgeBase.find(
         (topic) => topic.mainTopic === selectedMainTopic
@@ -471,8 +387,6 @@ export default function ChatBotUI() {
         botReply("Sorry, no main topic found.");
         return;
       }
-
-      // Current subtopic
       const currentSub = mainTopicObj.subtopics.find(
         (s) => s.subtopic === selectedSubtopic
       );
@@ -480,13 +394,10 @@ export default function ChatBotUI() {
         botReply("No subtopic found.");
         return;
       }
-
-      // Check if followUp is in the current subtopic
       const followUp = currentSub.followUpOptions.find(
         (f) => f.target === target
       );
       if (!followUp) {
-        // Maybe the target is a subtopic in the same main topic
         const fallbackSub = mainTopicObj.subtopics.find(
           (s) => s.subtopic === target
         );
@@ -494,7 +405,6 @@ export default function ChatBotUI() {
           botReply("No follow-up found.");
           return;
         } else {
-          // Found a subtopic in the same topic matching "target"
           setSelectedSubtopic(target);
           setMessages((prev) => [
             ...prev,
@@ -512,8 +422,6 @@ export default function ChatBotUI() {
           return;
         }
       }
-
-      // Found a matching followUp inside current subtopic
       const followUpSubtopic = mainTopicObj.subtopics.find(
         (s) => s.subtopic === followUp.target
       );
@@ -534,12 +442,34 @@ export default function ChatBotUI() {
       } else {
         botReply("Sorry, no response found for that follow-up.");
       }
-
       setIsBotTyping(false);
     }, 1200);
   };
 
-  // Send bot reply helper for errors
+  function showSubtopicFollowUps(subtopicName) {
+    const mainTopicObj = knowledgeBase.find(
+      (t) => t.mainTopic === selectedMainTopic
+    );
+    if (!mainTopicObj) return;
+    const stObj = mainTopicObj.subtopics.find(
+      (s) => s.subtopic === subtopicName
+    );
+    if (stObj && stObj.followUpOptions?.length > 0) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: uuidv4(),
+          type: "followUpOptions",
+          followUpOptions: stObj.followUpOptions,
+          typed: true,
+          source: "wp",
+        },
+      ]);
+    }
+  }
+  */
+
+  // Send bot reply helper for errors (unchanged)
   function botReply(text) {
     setMessages((prev) => [
       ...prev,
@@ -555,7 +485,7 @@ export default function ChatBotUI() {
     setIsBotTyping(false);
   }
 
-  // --- UPDATED: handleSend function ---
+  // --- handleSend function remains unchanged ---
   const handleSend = async () => {
     const text = input.trim();
     if (!text) return;
@@ -582,10 +512,8 @@ export default function ChatBotUI() {
       const rawReplyText =
         typeof rawReply === "string" ? rawReply : String(rawReply);
 
-     // For pinecone responses, use our dedicated markdown-to-JSX converter.
-
+      // For pinecone responses, use our dedicated markdown-to-JSX converter.
       const parsedContent = await parseMarkdownToJSXArray(rawReplyText);
-
 
       setMessages((prev) => [
         ...prev,
@@ -614,120 +542,19 @@ export default function ChatBotUI() {
     setIsOpen((prev) => !prev);
   };
 
-  // Called when the typewriter animation finishes
+  // Simplified typewriter finish handler – removed WP follow-up logic
   const handleTypewriterDone = (message) => {
     if (!message.hasCallback) return;
 
-    // Mark this message as fully typed
     setMessages((prev) =>
       prev.map((m) =>
         m.id === message.id ? { ...m, hasCallback: false, typed: true } : m
       )
     );
-
     setIsBotTyping(false);
-
-    if (
-      message.type === "bot" &&
-      Array.isArray(message.content) &&
-      message.content.length > 0 &&
-      typeof message.content[0] === "string"
-    ) {
-      // If it's the first bot message (greeting), show topics
-      if (messages.length === 1) {
-        addMainTopics();
-        return;
-      }
-    }
-    
-
-    if (message.subtopicName) {
-      const mainTopicObj = knowledgeBase.find(
-        (t) => t.mainTopic === selectedMainTopic
-      );
-      if (mainTopicObj) {
-        const stObj = mainTopicObj.subtopics.find(
-          (s) => s.subtopic === message.subtopicName
-        );
-        if (stObj?.followUpOptions?.length > 0) {
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: uuidv4(),
-              type: "followUpOptions",
-              followUpOptions: stObj.followUpOptions,
-              typed: true,
-              source: "wp",
-            },
-          ]);
-        }
-      }
-    }
   };
 
-  // Handle back button
-  const handleBackClick = () => {
-    if (navigationStack.length === 0) {
-      return;
-    }
-
-    const newStack = [...navigationStack];
-    const lastStep = newStack.pop();
-    setNavigationStack(newStack);
-
-    if (lastStep.type === NAV_TYPES.FOLLOW_UP_RESPONSE) {
-      // Return to the subtopic
-      setSelectedSubtopic(lastStep.data);
-      showSubtopicFollowUps(lastStep.data);
-    } else if (lastStep.type === NAV_TYPES.FOLLOW_UPS) {
-      // Return to subtopic card listing
-      setSelectedSubtopic(null);
-      const mainTopicObj = knowledgeBase.find(
-        (t) => t.mainTopic === selectedMainTopic
-      );
-      if (mainTopicObj) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: uuidv4(),
-            type: "subtopicCard",
-            description: mainTopicObj.description || "",
-            subtopics: mainTopicObj.subtopics.map((s) => s.subtopic),
-            typed: true,
-            source: "wp",
-          },
-        ]);
-      }
-    } else if (lastStep.type === NAV_TYPES.SUBTOPICS) {
-      setSelectedMainTopic(null);
-      setSelectedSubtopic(null);
-      addMainTopics();
-    }
-  };
-
-  // Helper to re-show follow-ups for a subtopic
-  function showSubtopicFollowUps(subtopicName) {
-    const mainTopicObj = knowledgeBase.find(
-      (t) => t.mainTopic === selectedMainTopic
-    );
-    if (!mainTopicObj) return;
-
-    const stObj = mainTopicObj.subtopics.find(
-      (s) => s.subtopic === subtopicName
-    );
-    if (stObj && stObj.followUpOptions?.length > 0) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: uuidv4(),
-          type: "followUpOptions",
-          followUpOptions: stObj.followUpOptions,
-          typed: true,
-          source: "wp",
-        },
-      ]);
-    }
-  }
+  // Removed handleBackClick as it's related to WP navigation
 
   return (
     <ChatContainer>
@@ -749,67 +576,8 @@ export default function ChatBotUI() {
             <StyledScrollContainer>
               <ChatContent>
                 {messages.map((msg) => {
-                  // Render topic list, subtopic card, follow-up options as before...
-                  if (msg.type === "topicList") {
-                    return (
-                      <ChatMessage key={msg.id} type="bot">
-                        <CardContainer>
-                          <CardButtonsWrapper>
-                            {msg.topics.map((topic) => (
-                              <CardButton
-                                key={topic}
-                                onClick={() => handleMainTopicClick(topic)}
-                              >
-                                {topic}
-                              </CardButton>
-                            ))}
-                          </CardButtonsWrapper>
-                        </CardContainer>
-                      </ChatMessage>
-                    );
-                  }
-
-                  if (msg.type === "subtopicCard") {
-                    return (
-                      <ChatMessage key={msg.id} type="bot">
-                        <CardContainer>
-                          <CardDescription>{msg.description}</CardDescription>
-                          <CardButtonsWrapper>
-                            {msg.subtopics.map((sub) => (
-                              <CardButton
-                                key={sub}
-                                onClick={() => handleSubtopicClick(sub)}
-                              >
-                                {sub}
-                              </CardButton>
-                            ))}
-                          </CardButtonsWrapper>
-                        </CardContainer>
-                      </ChatMessage>
-                    );
-                  }
-
-                  if (msg.type === "followUpOptions") {
-                    return (
-                      <ChatMessage key={msg.id} type="bot">
-                        <CardContainer>
-                          <CardDescription>Learn More:</CardDescription>
-                          <CardButtonsWrapper>
-                            {msg.followUpOptions.map((option) => (
-                              <CardButton
-                                key={option.label}
-                                onClick={() => handleFollowUpClick(option.target)}
-                              >
-                                {option.label}
-                              </CardButton>
-                            ))}
-                          </CardButtonsWrapper>
-                        </CardContainer>
-                      </ChatMessage>
-                    );
-                  }
-
-                  // Normal text message
+                  // Removed rendering for topicList, subtopicCard, and followUpOptions
+                  // Render normal text messages only
                   return (
                     <ChatMessage key={msg.id} type={msg.type}>
                       <ChatBubbleContent
@@ -828,12 +596,6 @@ export default function ChatBotUI() {
                   <LoaderWrapper>
                     <Spinner />
                   </LoaderWrapper>
-                )}
-
-                {navigationStack.length > 0 && (
-                  <BackButton onClick={handleBackClick}>
-                    <FiArrowLeft size={18} /> Back
-                  </BackButton>
                 )}
               </ChatContent>
             </StyledScrollContainer>
