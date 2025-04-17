@@ -4,10 +4,26 @@ import React from "react";
 import ChatBotUI from "../components/chatbot/ChatBotUI";
 
 export default function ChatPage() {
-  // We'll remove "fixed" positioning from ChatBotUI, so it fits this page well:
   return (
-    <div style={{ width: "100%", height: "100vh" }}>
-      <ChatBotUI />
-    </div>
+    <>
+      {/* force the iframe’s underlying HTML/body to be transparent */}
+      <style jsx global>{`
+        html,
+        body,
+        #__next {
+          background: transparent !important;
+        }
+      `}</style>
+
+      <div
+        style={{
+          width: "100%",
+          height: "100vh",
+          background: "transparent",
+        }}
+      >
+        <ChatBotUI />
+      </div>
+    </>
   );
 }
