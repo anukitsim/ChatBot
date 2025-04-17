@@ -43,7 +43,7 @@ const ChatBubbleIcon = styled(motion.button)`
 
 const ChatBox = styled(motion.div)`
   position: absolute;
-  bottom: 80px; /* 20px + 60px bubble = 80px total */
+  bottom: 90px; /* 20px + 60px bubble = 80px total */
   right: 20px;
   width: 360px;
   height: 500px;
