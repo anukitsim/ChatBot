@@ -15,6 +15,7 @@ const ChatContainer = styled.div`
   width: 100%;
   height: 100%;
   font-family: "Poppins", sans-serif;
+  background: transparent; 
 `;
 
 const ChatBubbleIcon = styled(motion.button)`
