@@ -6,29 +6,18 @@ import ChatBotUI from "../components/chatbot/ChatBotUI";
 export default function ChatPage() {
   return (
     <>
-      {/* force the iframe’s underlying HTML/body to be transparent */}
       <style jsx global>{`
+        /* Make the iframe’s root fill the viewport & be transparent */
         html,
         body,
-        #__next .chat-container {
+        #__next {
+          height: 100%;
+          margin: 0;
+          padding: 0;
           background: transparent !important;
-          pointer-events: none;
-        }
-        .chat-bubble-icon,
-        .chat-box {
-          pointer-events: auto;
         }
       `}</style>
-
-      <div
-        style={{
-          width: "100%",
-          height: "100vh",
-          background: "transparent",
-        }}
-      >
-        <ChatBotUI />
-      </div>
+      <ChatBotUI />
     </>
   );
 }
