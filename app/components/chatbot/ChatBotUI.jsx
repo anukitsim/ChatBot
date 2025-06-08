@@ -20,8 +20,8 @@ const ChatContainer = styled.div`
 
 const ChatBubbleIcon = styled(motion.button)`
   position: fixed;               /* pin to iframe viewport */
-  bottom: 20px;
-  right: 20px;
+  bottom: 0;
+  right: 0;
   width: 60px;
   height: 60px;
   background-color: #e5703a;
@@ -44,8 +44,8 @@ const ChatBubbleIcon = styled(motion.button)`
 
 const ChatBox = styled(motion.div)`
   position: fixed;               /* pin to iframe viewport */
-  bottom: 90px;                  /* 20px gap + 60px bubble */
-  right: 20px;
+  bottom: 60px;                  /* 20px gap + 60px bubble */
+  right: 0;
   width: 360px;
   height: 500px;
   background-color: #fff;
