@@ -4,35 +4,28 @@
   iframe.style.position = "fixed";
   iframe.style.bottom = "20px";
   iframe.style.right = "20px";
-  iframe.style.width = "60px";    // default “bubble” size
-  iframe.style.height = "60px";
+  // CLOSED size: bubble (60×60) + 20px margin around = 80×80
+  iframe.style.width = "80px";
+  iframe.style.height = "80px";
   iframe.style.border = "none";
   iframe.style.zIndex = "999999";
   iframe.style.transition = "all 0.3s ease";
 
   function resizeIframe(open) {
     if (open) {
+      // OPEN size: 400×600
       iframe.style.width = "400px";
       iframe.style.height = "600px";
     } else {
-      iframe.style.width = "60px";
-      iframe.style.height = "60px";
+      iframe.style.width = "80px";
+      iframe.style.height = "80px";
     }
   }
 
   window.addEventListener("message", (event) => {
     if (event.data?.type === "CHATBOT_SIZE") {
-      // if we got exact dims, use those…
-      if (
-        typeof event.data.width === "number" &&
-        typeof event.data.height === "number"
-      ) {
-        iframe.style.width = event.data.width + "px";
-        iframe.style.height = event.data.height + "px";
-      } else {
-        // …otherwise fall back
-        resizeIframe(event.data.open);
-      }
+      // ignore any width/height in the message, just use our static open/closed sizes
+      resizeIframe(event.data.open);
     }
   });
 
