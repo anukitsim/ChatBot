@@ -1,10 +1,10 @@
-(function () {
+;(function () {
   const iframe = document.createElement("iframe");
   iframe.src = "https://chat-bot-gamma-tan.vercel.app/chat";
   iframe.style.position = "fixed";
   iframe.style.bottom = "20px";
   iframe.style.right = "20px";
-  iframe.style.width = "60px"; // default to small bubble size
+  iframe.style.width = "60px";    // default “bubble” size
   iframe.style.height = "60px";
   iframe.style.border = "none";
   iframe.style.zIndex = "999999";
@@ -22,7 +22,17 @@
 
   window.addEventListener("message", (event) => {
     if (event.data?.type === "CHATBOT_SIZE") {
-      resizeIframe(event.data.open);
+      // if we got exact dims, use those…
+      if (
+        typeof event.data.width === "number" &&
+        typeof event.data.height === "number"
+      ) {
+        iframe.style.width = event.data.width + "px";
+        iframe.style.height = event.data.height + "px";
+      } else {
+        // …otherwise fall back
+        resizeIframe(event.data.open);
+      }
     }
   });
 

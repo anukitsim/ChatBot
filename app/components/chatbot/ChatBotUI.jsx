@@ -15,7 +15,8 @@ const ChatContainer = styled.div`
   width: 100%;
   height: 100%;
   font-family: "Poppins", sans-serif;
-  background: transparent; 
+  background: transparent;
+  pointer-events: none;
 `;
 
 const ChatBubbleIcon = styled(motion.button)`
@@ -39,6 +40,7 @@ const ChatBubbleIcon = styled(motion.button)`
     background-color: #d55d2f;
     transform: scale(1.05);
   }
+  pointer-events: auto;
 `;
 
 const ChatBox = styled(motion.div)`
@@ -54,6 +56,7 @@ const ChatBox = styled(motion.div)`
   flex-direction: column;
   overflow: hidden;
   color: #333;
+  pointer-events: auto;
 `;
 
 const ChatHeader = styled.div`
@@ -133,7 +136,8 @@ const SendButton = styled.button`
 
 const ChatMessage = styled.div`
   align-self: ${({ type }) => (type === "bot" ? "flex-start" : "flex-end")};
-  background-color: ${({ type }) => (type === "bot" ? "transparent" : "#e5703a")};
+  background-color: ${({ type }) =>
+    type === "bot" ? "transparent" : "#e5703a"};
   color: ${({ type }) => (type === "bot" ? "#333" : "#fff")};
   padding: 10px 12px;
   border-radius: 16px;
@@ -141,8 +145,10 @@ const ChatMessage = styled.div`
   word-wrap: break-word;
   font-size: 14px;
   line-height: 1.5;
-  border: ${({ type }) => (type === "bot" ? "1px solid rgba(0, 0, 0, 0.1)" : "none")};
-  box-shadow: ${({ type }) => (type === "bot" ? "0 2px 4px rgba(0, 0, 0, 0.1)" : "none")};
+  border: ${({ type }) =>
+    type === "bot" ? "1px solid rgba(0, 0, 0, 0.1)" : "none"};
+  box-shadow: ${({ type }) =>
+    type === "bot" ? "0 2px 4px rgba(0, 0, 0, 0.1)" : "none"};
   backdrop-filter: blur(10px);
   background-clip: padding-box;
 `;
@@ -167,13 +173,9 @@ export default function ChatBotUI() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.parent !== window) {
-      window.parent.postMessage(
-        { type: "CHATBOT_SIZE", open: isOpen },
-        "*"
-      );
+      window.parent.postMessage({ type: "CHATBOT_SIZE", open: isOpen }, "*");
     }
   }, [isOpen]);
-  
 
   function addGreeting() {
     setMessages((prev) => [
@@ -226,7 +228,8 @@ export default function ChatBotUI() {
 
       const data = await res.json();
       const rawReply = data.reply || "Error. Please try again.";
-      const rawReplyText = typeof rawReply === "string" ? rawReply : String(rawReply);
+      const rawReplyText =
+        typeof rawReply === "string" ? rawReply : String(rawReply);
       const parsedContent = await parseMarkdownToJSXArray(rawReplyText);
 
       setMessages((prev) => [
@@ -275,6 +278,7 @@ export default function ChatBotUI() {
       <AnimatePresence>
         {isOpen && (
           <ChatBox
+            className="chat-box"
             variants={chatBoxVariants}
             initial="exit"
             animate="visible"

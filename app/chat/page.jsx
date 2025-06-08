@@ -10,8 +10,13 @@ export default function ChatPage() {
       <style jsx global>{`
         html,
         body,
-        #__next {
+        #__next .chat-container {
           background: transparent !important;
+          pointer-events: none;
+        }
+        .chat-bubble-icon,
+        .chat-box {
+          pointer-events: auto;
         }
       `}</style>
 
