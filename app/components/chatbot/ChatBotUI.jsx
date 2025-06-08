@@ -165,6 +165,16 @@ export default function ChatBotUI() {
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.parent !== window) {
+      window.parent.postMessage(
+        { type: "CHATBOT_SIZE", open: isOpen },
+        "*"
+      );
+    }
+  }, [isOpen]);
+  
+
   function addGreeting() {
     setMessages((prev) => [
       ...prev,
