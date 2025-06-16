@@ -21,7 +21,7 @@
   });
 
   /* 2. point iframe to the standalone chat page that renders ChatBotUI */
-  iframe.src = 'https://chat-bot-gamma-tan.vercel.app/chat-widget.js';  /* or /chat/page route */
+  iframe.src = 'https://chat-bot-gamma-tan.vercel.app/chat';  /* or /chat/page route */
 
   document.body.appendChild(iframe);
 
