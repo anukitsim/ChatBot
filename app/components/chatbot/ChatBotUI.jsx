@@ -267,7 +267,7 @@ export default function ChatBotUI() {
 
   /* ---------------- Keep greeting translated -------------------*/
   useEffect(() => {
-    if (!isOpen) return; // do nothing if chat is closed
+    if (!isOpen) return; 
     setMessages((m) =>
       m.map((msg) =>
         msg.isGreeting
